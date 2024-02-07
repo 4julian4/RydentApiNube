@@ -1,18 +1,49 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using RydentWebApiNube.LogicaDeNegocio.Entidades;
+using RydentWebApiNube.LogicaDeNegocio.Servicios;
+using System;
 using System.Text.Json;
 
 namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 {
     public class RydentHub : Hub
     {
+        private readonly ISedesServicios _sedesServicios;
+        private readonly ISedesConectadasServicios _sedesconectadasServicios;
+        public RydentHub(ISedesServicios sedesServicios, ISedesConectadasServicios sedesconectadasServicios)
+        {
+            _sedesServicios = sedesServicios;
+            _sedesconectadasServicios = sedesconectadasServicios;
+        }
         //public async Task SendMessage(string user, string message)
         //{
         //    await Clients.All.SendAsync("ReceiveMessage", user, message);
         //}
 
-        public async Task RegistrarEquipo(string clienteId, string equipoId)
+        public async Task RegistrarEquipo(string idActualSignalR, string identificadorLocal)
         {
-            await Clients.All.SendAsync("RegistrarEquipo", clienteId, equipoId);
+            var sede= await _sedesServicios.ConsultarSedePorIdentificadorLocal(identificadorLocal);
+            if (sede.idSede > 0)
+            {
+                var sedesConectadas = await _sedesconectadasServicios.ConsultarPorSedeConEstadoActivo(sede.idSede);
+                foreach (var item in sedesConectadas)
+                {
+                    if (item.idActualSignalR != idActualSignalR)
+                    {
+                        item.activo = false;
+                        await _sedesconectadasServicios.Editar(item.idSedeConectada, item);
+                    }
+                }
+                await _sedesconectadasServicios.Agregar(new SedesConectadas { 
+                    idCliente = sede.idCliente,
+                    idSede = sede.idSede,
+                    idActualSignalR = idActualSignalR,
+                    fechaUltimoAcceso = DateTime.Now,
+                    activo = true
+                });
+                return;
+            }
+            await Clients.All.SendAsync("RegistrarEquipo", idActualSignalR, identificadorLocal);
         }
 
         public async Task ObtenerPin(string clienteId, string pin)

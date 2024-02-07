@@ -1,7 +1,26 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using RydentWebApiNube.LogicaDeNegocio.DbContexts;
 using RydentWebApiNube.LogicaDeNegocio.Hubs;
+using RydentWebApiNube.LogicaDeNegocio.Servicios;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IClientesServicios, ClientesServicios>();
+builder.Services.AddScoped<IHistorialesServicios, HistorialesServicios>();
+builder.Services.AddScoped<ISedesConectadasServicios, SedesConectadasServicios>();
+builder.Services.AddScoped<ISedesServicios, SedesServicios>();
+builder.Services.AddScoped<IUsuariosServicios, UsuariosServicios>();
+builder.Services.AddScoped<IHistorialDePagosServicios, HistorialDePagosServicios>();
+
+
+
+//var strDbConn = builder.Configuration.GetConnectionString("ConexionDb");
+
+
+//builder.Services.AddDbContext<AppDbContext>(options =>
+//                options.UseSqlServer(strDbConn, ef => ef.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)), ServiceLifetime.Scoped);
+
 
 // Add services to the container.
 

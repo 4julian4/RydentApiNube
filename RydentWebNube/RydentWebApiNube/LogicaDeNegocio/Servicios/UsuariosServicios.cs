@@ -61,27 +61,35 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
 
         public async Task<int> ConsultarCorreoyFechaActivo(string correoUsuario)
         {
-            using (var _dbcontext = new AppDbContext())
+            try
             {
-                var obj = await _dbcontext.TUsuarios.Where(x => x.correoUsuario == correoUsuario).ToListAsync();
-                if (obj.Count == 0)
+                using (var _dbcontext = new AppDbContext())
                 {
-                    return 2; //No existe el correo
-                }
-                else
-                {
-                    var usuario = obj.FirstOrDefault();
-                    var cliente = await _dbcontext.TClientes.FirstOrDefaultAsync(x => x.idCliente == usuario.idCliente);
-                    if (cliente.activoHasta != null && cliente.activoHasta >= DateTime.Now.Date)
+                    var obj = await _dbcontext.TUsuarios.Where(x => x.correoUsuario == correoUsuario).ToListAsync();
+                    if (obj.Count == 0)
                     {
-                        return 1; //El cliente esta activo
+                        return 2; //No existe el correo
                     }
                     else
                     {
-                        return 3; //El cliente no esta activo
+                        var usuario = obj.FirstOrDefault();
+                        var cliente = await _dbcontext.TClientes.FirstOrDefaultAsync(x => x.idCliente == usuario.idCliente);
+                        if (cliente.activoHasta != null && cliente.activoHasta >= DateTime.Now.Date)
+                        {
+                            return 1; //El cliente esta activo
+                        }
+                        else
+                        {
+                            return 3; //El cliente no esta activo
+                        }
                     }
-                }   
+                }
             }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+            
         }
 
         public async Task<bool> Editar(long idUsuario, Usuarios usuarios)

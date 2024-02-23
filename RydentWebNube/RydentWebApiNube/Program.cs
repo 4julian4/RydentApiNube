@@ -15,6 +15,7 @@ builder.Services.AddScoped<IHistorialDePagosServicios, HistorialDePagosServicios
 
 
 
+
 //var strDbConn = builder.Configuration.GetConnectionString("ConexionDb");
 
 
@@ -28,7 +29,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(o =>
+{
+    o.EnableDetailedErrors = true;
+    o.MaximumReceiveMessageSize = null;
+});
 
 builder.Services.AddCors(options =>
 {

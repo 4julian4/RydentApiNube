@@ -20,6 +20,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         //    await Clients.All.SendAsync("ReceiveMessage", user, message);
         //}
 
+
         public async Task RegistrarEquipo(string idActualSignalR, string identificadorLocal)
         {
             var sede= await _sedesServicios.ConsultarSedePorIdentificadorLocal(identificadorLocal);
@@ -71,23 +72,44 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         //Este dato de clienteId queda guardado en sedes conectadas
 
         //Cuando se invoca es que se ejecuta estas funciones del servidor SR
-        public async Task ConsultarPorDiaYPorUnidad(string clienteId, int silla, DateTime fecha)
+
+        public async Task AgendarCita(string clienteId, string modelocrearcita)
+        {
+            await Clients.Client(clienteId).SendAsync("AgendarCita", Context.ConnectionId, modelocrearcita);
+        }
+
+        public async Task RespuestaAgendarCita(string clienteId, string modelocrearcita)
         {
             //-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
-            await Clients.Client(clienteId).SendAsync("ConsultarPorDiaYPorUnidad", Context.ConnectionId, silla, fecha);
+            await Clients.Client(clienteId).SendAsync("RespuestaAgendarCita", Context.ConnectionId, modelocrearcita);
         }
 
 
         //En este caso ClienteId es el Identificador del cliente angular que previamente enviamos al invocar ConsultarPorDiaYPorUnidad el Context.ConnectionId 
-        public async Task RespuestaConsultarPorDiaYPorUnidad(string clienteId, object respuesta)
+        public async Task RespuestaObtenerConsultaPorDiaYPorUnidad(string clienteId, string respuesta)
         {
             //respuesta es el objeto que se obtiene de la consulta en la bd rydent local, debe devolver una instancia del objeto TCitas y un listado del objeto TDetalleCitas
-            string jsonString = JsonSerializer.Serialize(respuesta);
-            await Clients.Client(clienteId).SendAsync("RespuestaConsultarPorDiaYPorUnidad", clienteId, jsonString);
+           
+            await Clients.Client(clienteId).SendAsync("RespuestaObtenerConsultaPorDiaYPorUnidad", clienteId, respuesta);
         }
 
-        
+        public async Task ObtenerConsultaPorDiaYPorUnidad(string clienteId, string silla, DateTime fecha)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("ObtenerConsultaPorDiaYPorUnidad", Context.ConnectionId, silla, fecha);
+            }
+            catch (Exception e)
+            {
 
+                throw;
+            }
+            
+        }
+
+
+
+        
         public async Task BuscarPaciente(string clienteId, string tipoBuqueda, string valorDeBusqueda)
         {
             await Clients.Client(clienteId).SendAsync("BuscarPaciente", Context.ConnectionId, tipoBuqueda, valorDeBusqueda);
@@ -127,6 +149,26 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         public async Task RespuestaObtenerDatosEvolucion(string clienteId, string evolucion)
         {
             await Clients.Client(clienteId).SendAsync("RespuestaObtenerDatosEvolucion", clienteId, evolucion);
+        }
+
+        public async Task GuardarDatosEvolucion(string clienteId, string evolucion)
+        {
+            await Clients.Client(clienteId).SendAsync("GuardarDatosEvolucion", Context.ConnectionId, evolucion);
+        }
+
+        public async Task RespuestaGuardarDatosEvolucion(string clienteId, string respuesta)
+        {
+            await Clients.Client(clienteId).SendAsync("RespuestaGuardarDatosEvolucion", clienteId, respuesta);
+        }
+
+        public async Task ObtenerCodigosEps(string clienteId)
+        {
+            await Clients.Client(clienteId).SendAsync("ObtenerCodigosEps", Context.ConnectionId);
+        }
+
+        public async Task RespuestaObtenerCodigosEps(string clienteId, string listadoeps)
+        {
+            await Clients.Client(clienteId).SendAsync("RespuestaObtenerCodigosEps", clienteId, listadoeps);
         }
     }
 }

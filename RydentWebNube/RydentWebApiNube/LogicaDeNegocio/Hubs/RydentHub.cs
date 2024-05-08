@@ -197,6 +197,34 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         {
             await Clients.Client(clienteId).SendAsync("RespuestaBuscarPaciente", clienteId, listPacientes);
         }
+        
+        public async Task BuscarCitasPacienteAgenda(string clienteId, string valorBuscarAgenda)
+        {            
+            string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+            if (idActualSignalR != "")
+            {
+                try
+                {
+                    await Clients.Client(clienteId).SendAsync("BuscarCitasPacienteAgenda", Context.ConnectionId, valorBuscarAgenda);
+                }
+                catch (Exception e)
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                }
+            }
+            else
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+            }
+            
+        }
+        
+        public async Task RespuestaBuscarCitasPacienteAgenda(string clienteId, string listPacientes)
+        {
+            await Clients.Client(clienteId).SendAsync("RespuestaBuscarCitasPacienteAgenda", clienteId, listPacientes);
+        }
+
+
 
         public async Task ObtenerDatosPersonalesCompletosPaciente(string clienteId, string idAnanesis)
         {
@@ -329,6 +357,31 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await Clients.Client(clienteId).SendAsync("RespuestaGuardarDatosRips", clienteId, respuesta);
         }
 
+        public async Task ObtenerDatosAdministrativos(string clienteId, DateTime fechaInicio, DateTime fechaFin)
+        {
+            string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+            if (idActualSignalR != "")
+            {
+                try
+                {
+                    await Clients.Client(clienteId).SendAsync("ObtenerDatosAdministrativos", Context.ConnectionId, fechaInicio, fechaFin);
+                }
+                catch (Exception e)
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                }
+            }
+            else
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+            }
+
+        }
+
+        public async Task RespuestaObtenerDatosAdministrativos(string clienteId, string respuesta)
+        {
+            await Clients.Client(clienteId).SendAsync("RespuestaObtenerDatosAdministrativos", clienteId, respuesta);
+        }
         public async Task ObtenerCodigosEps(string clienteId)
         {
             string idActualSignalR = await ValidarIdActualSignalR(clienteId);
@@ -410,7 +463,31 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await Clients.Client(clienteId).SendAsync("RespuestaRealizarAccionesEnCitaAgendada", clienteId, modelorealizaraccionesenlacitaagendada);
         }
 
+        public async Task ConsultarEstadoCuenta(string clienteId, string modeloDatosParaConsultarEstadoCuenta)
+        {
+            string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+            if (idActualSignalR != "")
+            {
+                try
+                {
+                    await Clients.Client(clienteId).SendAsync("ConsultarEstadoCuenta", Context.ConnectionId, modeloDatosParaConsultarEstadoCuenta);
+                }
+                catch (Exception e)
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                }
+            }
+            else
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+            }
+        }
 
+        public async Task RespuestaConsultarEstadoCuenta(string clienteId, string respuestaConsultarEstadoCuenta)
+        {
+            
+            await Clients.Client(clienteId).SendAsync("RespuestaConsultarEstadoCuenta", clienteId, respuestaConsultarEstadoCuenta);
+        }
 
 
     }

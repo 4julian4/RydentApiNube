@@ -136,6 +136,32 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await Clients.Client(clienteId).SendAsync("RespuestaObtenerDoctor", clienteId, respuestaObtenerDoctor);
         }
 
+        
+        public async Task ObtenerDoctorSiLoCambian(string clienteId, string idDoctor)
+        {
+            string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+            if (idActualSignalR != "")
+            {
+                try
+                {
+                    await Clients.Client(clienteId).SendAsync("ObtenerDoctorSiLoCambian", Context.ConnectionId, idDoctor);
+                }
+                catch (Exception e)
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                }
+            }
+            else
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+            }
+        }
+
+        public async Task RespuestaObtenerDoctorSiLoCambian(string clienteId, string respuestaObtenerDoctor)
+        {
+            await Clients.Client(clienteId).SendAsync("RespuestaObtenerDoctorSiLoCambian", clienteId, respuestaObtenerDoctor);
+        }
+
         //----------------ConsultarPorDiaYPorUnidad en Base de Datos Rydent Local----------------
         //ClienteId: Identificador del cliente local que tiene el worked por medio del cual se realizara la consulta en la bd rydent local
         //Este dato de clienteId queda guardado en sedes conectadas

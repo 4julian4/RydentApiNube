@@ -46,8 +46,16 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
         {
             using (var _dbcontext = new AppDbContext())
             {
-                var obj = await _dbcontext.TSedes.FirstOrDefaultAsync(x => x.identificadorLocal == identificadorLocal);
-                return obj == null ? new Sedes() : obj;
+                try
+                {
+                    var obj = await _dbcontext.TSedes.FirstOrDefaultAsync(x => x.identificadorLocal == identificadorLocal);
+                    return obj == null ? new Sedes() : obj;
+                }
+                catch (Exception e)
+                {
+
+                    return new Sedes();
+                }
             }
         }
 

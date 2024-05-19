@@ -89,7 +89,16 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
             {
                 return 0;
             }
-            
+
+        }
+        public async Task<Usuarios> ConsultarPorCodigoExterno(string codigo)
+        {
+            using (var _dbcontext = new AppDbContext())
+            {
+                var obj = await _dbcontext.TUsuarios.Where(x => x.codigoExternoUsuario == codigo).FirstOrDefaultAsync();
+                return obj == null ? new Usuarios() : obj;
+            }
+                
         }
 
         public async Task<bool> Editar(long idUsuario, Usuarios usuarios)
@@ -117,6 +126,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
         Task<bool> Editar(long idUsuario, Usuarios usuarios);
         Task<Usuarios> ConsultarPorId(long idUsuario);
         Task<Usuarios> ConsultarPorCorreo(string correoUsuario);
+        Task<Usuarios> ConsultarPorCodigoExterno(string codigo);
         Task<List<Usuarios>> ConsultarTodos();
         Task<int> ConsultarCorreoyFechaActivo(string correoUsuario);
         Task Borrar(long idUsuario);

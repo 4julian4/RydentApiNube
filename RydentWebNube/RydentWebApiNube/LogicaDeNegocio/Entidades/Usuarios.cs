@@ -12,5 +12,6 @@ namespace RydentWebApiNube.LogicaDeNegocio.Entidades
         public string? nombreUsuario { get; set; }
         public string? correoUsuario { get; set; }
         public bool? estado { get; set; }
+        public string? codigoExternoUsuario { get; set; }
     }
 }

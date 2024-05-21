@@ -14,56 +14,50 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
         with:
           dotnet-version: '6.0.x'
-          include-prerelease: true
 
       - name: Build with dotnet
-        working-directory: RydentWebNube/RydentWebApiNube
+        working-directory: RydentWebNube/RydentWebApiNube  # Ajusta el directorio de trabajo
         run: dotnet build --configuration Release
 
-      - name: dotnet publish
-        working-directory: RydentWebNube/RydentWebApiNube
-        run: dotnet publish -c Release -o ${{ github.workspace }}/RydentWebApiNube/publish
+      - name: Publish with dotnet
+        working-directory: RydentWebNube/RydentWebApiNube  # Ajusta el directorio de trabajo
+        run: dotnet publish -c Release -o ${{ github.workspace }}/publish
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: .net-app
-          path: ${{ github.workspace }}/RydentWebApiNube/publish
+          path: ${{ github.workspace }}/publish
 
   deploy:
     runs-on: windows-latest
     needs: build
     environment:
       name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: .net-app
-          path: ${{ github.workspace }}/RydentWebNube/RydentWebApiNube/publish
-      
+
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_423F7951580647BB840379C00BE213A6 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C4CDD21BFE654E2BA497D1FD33A6BC9D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5B69B619B8954CA8B1CB34B64D6F7752 }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'rydentwebdv'
           slot-name: 'Production'
-          package: .
-          
+          package: ${{ github.workspace }}/publish

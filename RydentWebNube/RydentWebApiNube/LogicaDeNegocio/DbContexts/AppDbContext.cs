@@ -11,11 +11,12 @@ namespace RydentWebApiNube.LogicaDeNegocio.DbContexts
         {
             if (!optionsBuilder.IsConfigured)
             {
-                IConfigurationRoot configuration = new ConfigurationBuilder()
+                IConfigurationRoot configuration = new ConfigurationBuilder().AddEnvironmentVariables()
                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                    .AddJsonFile("appsettings.json")
                    .Build();
-                optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                string connectionString = configuration["CONEXIONDB"];
+                optionsBuilder.UseSqlServer(configuration["CONEXIONDB"]);
             }
             
         }

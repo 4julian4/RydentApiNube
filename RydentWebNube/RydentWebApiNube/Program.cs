@@ -5,6 +5,7 @@ using RydentWebApiNube.LogicaDeNegocio.Hubs;
 using RydentWebApiNube.LogicaDeNegocio.Servicios;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddScoped<IClientesServicios, ClientesServicios>();
 builder.Services.AddScoped<IHistorialesServicios, HistorialesServicios>();
@@ -13,15 +14,14 @@ builder.Services.AddScoped<ISedesServicios, SedesServicios>();
 builder.Services.AddScoped<IUsuariosServicios, UsuariosServicios>();
 builder.Services.AddScoped<IHistorialDePagosServicios, HistorialDePagosServicios>();
 
-
-
+// Cargar configuración de variables de entorno
 
 //var strDbConn = builder.Configuration.GetConnectionString("ConexionDb");
 
 
 //builder.Services.AddDbContext<AppDbContext>(options =>
 //                options.UseSqlServer(strDbConn, ef => ef.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)), ServiceLifetime.Scoped);
-
+// Configurar servicios y demás
 
 // Add services to the container.
 

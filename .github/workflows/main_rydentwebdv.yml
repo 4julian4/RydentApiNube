@@ -57,16 +57,7 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_423F7951580647BB840379C00BE213A6 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C4CDD21BFE654E2BA497D1FD33A6BC9D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5B69B619B8954CA8B1CB34B64D6F7752 }}
-        env:
-          CONEXIONDB: ${{ secrets.CONEXIONDB }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          OAUTH2_AZURE_CLIENTID: ${{ secrets.OAUTH2_AZURE_CLIENTID }}
-          OAUTH2_AZURE_SECRET: ${{ secrets.OAUTH2_AZURE_SECRET }}
-          OAUTH2_GOOGLE_CLIENTID: ${{ secrets.OAUTH2_GOOGLE_CLIENTID }}
-          OAUTH2_GOOGLE_SECRET: ${{ secrets.OAUTH2_GOOGLE_SECRET }}
-        
-        
-          
+                 
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
@@ -74,3 +65,10 @@ jobs:
           app-name: 'rydentwebdv'
           slot-name: 'Production'
           package: ${{ github.workspace }}/publish
+        env:
+          CONEXIONDB: ${{ secrets.CONEXIONDB }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          OAUTH2_AZURE_CLIENTID: ${{ secrets.OAUTH2_AZURE_CLIENTID }}
+          OAUTH2_AZURE_SECRET: ${{ secrets.OAUTH2_AZURE_SECRET }}
+          OAUTH2_GOOGLE_CLIENTID: ${{ secrets.OAUTH2_GOOGLE_CLIENTID }}
+          OAUTH2_GOOGLE_SECRET: ${{ secrets.OAUTH2_GOOGLE_SECRET }}

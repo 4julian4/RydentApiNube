@@ -43,16 +43,16 @@ namespace RydentWebApiNube.Controllers
             this.iUsuariosServicios = iUsuariosServicios;
             this.AuthCodeEndPoint = configuration["OAuth:AuthCodeEndPoint"] ?? "";
             this.TokenEndPoint = configuration["OAuth:TokenEndPoint"] ?? "";
-            this.ClientId = configuration["OAuth:ClientId"] ?? "";
-            this.Secret = configuration["OAuth:Secret"] ?? "";
+            this.ClientId = configuration["OAUTH2_AZURE_CLIENTID"] ?? "";
+            this.Secret = configuration["OAUTH2_AZURE_SECRET"] ?? "";
             this.Scope = configuration["OAuth:Scope"] ?? "";
             this.RedirectURI = configuration["OAuth:RedirectURI"] ?? "";
             this.API_EndPoint = configuration["OAuth:API_EndPoint"] ?? "";
 
 
             this.GoogleTokenEndPoint = configuration["OAuthGoogle:TokenEndPoint"] ?? "";
-            this.GoogleClientId = configuration["OAuthGoogle:ClientId"] ?? "";
-            this.GoogleSecret = configuration["OAuthGoogle:Secret"] ?? "";
+            this.GoogleClientId = configuration["OAUTH2_GOOGLE_CLIENTID"] ?? "";
+            this.GoogleSecret = configuration["OAUTH2_GOOGLE_SECRET"] ?? "";
             this.GoogleRedirectURI = configuration["OAuthGoogle:RedirectURI"] ?? "";
             this.GoogleAPI_EndPoint = configuration["OAuthGoogle:API_EndPoint"] ?? "";
         }
@@ -180,7 +180,7 @@ namespace RydentWebApiNube.Controllers
         {
             // generate token that is valid for 7 days
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(configuration["Jwt:key"] ?? "");
+            var key = Encoding.ASCII.GetBytes(configuration["JWT_SECRET"] ?? "");
             var lstClaims = new List<Claim>();
             lstClaims.Add(new Claim("id", user.idUsuario.ToString()));
             lstClaims.Add(new Claim("idCliente", user.idCliente.ToString()));
@@ -189,7 +189,7 @@ namespace RydentWebApiNube.Controllers
                 Subject = new ClaimsIdentity(lstClaims),
                 Expires = DateTime.UtcNow.AddDays(7),
                 Issuer = configuration["Jwt:Issuer"] ?? "",
-                Audience = configuration["Jwt:Audience"] ?? "",
+                Audience = configuration["JWT_SECRET"] ?? "",
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);

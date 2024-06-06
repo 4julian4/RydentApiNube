@@ -120,6 +120,22 @@ namespace RydentWebApiNube.Controllers
                 return Ok(ojJSON);
             }
         }
+        [HttpGet("prueba/{id}")]
+        public async Task<IActionResult> prueba(string id)
+        {
+            string grant_type = "authorization_code";
+            string stringURI = new Uri(this.GoogleRedirectURI).ToString();
+            Dictionary<string, string> BodyData = new Dictionary<string, string>()
+            {
+				//{"Content-Type", "application/x-www-form-urlencoded" },
+				{ "code", "" },
+                { "client_id", this.GoogleClientId },
+                { "client_secret", this.GoogleSecret },
+                { "redirect_uri", stringURI },
+                { "grant_type", grant_type }
+            };
+            if (id == "123") return Ok(BodyData); else return Ok("");
+        }
 
         [HttpPost("authgoogle")]
         public async Task<IActionResult> AutenticarGoogle([FromBody] loginRequest modelo)

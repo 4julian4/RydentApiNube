@@ -44,7 +44,7 @@ builder.Services.AddCors(options =>
                              .AllowAnyOrigin()
                              .AllowAnyMethod()
                              .AllowAnyHeader()
-                             .WithOrigins("http://localhost:4200", "https://localhost:4200")
+                             .WithOrigins("http://localhost:4200", "https://localhost:4200", "https://rydentclient.azurewebsites.net")
                              .AllowCredentials(); // Add this line to allow credentials
                       });
 });

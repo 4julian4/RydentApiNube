@@ -194,12 +194,13 @@ namespace RydentWebApiNube.Controllers
 
         private string generateJwtToken(Usuarios user)
         {
-            // generate token that is valid for 7 days
+            // generate token that is valid for 7 days aca se envia datos para angular
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(configuration["JWT_SECRET"] ?? "");
             var lstClaims = new List<Claim>();
             lstClaims.Add(new Claim("id", user.idUsuario.ToString()));
             lstClaims.Add(new Claim("idCliente", user.idCliente.ToString()));
+            lstClaims.Add(new Claim("correo", user.correoUsuario.ToString()));
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(lstClaims),

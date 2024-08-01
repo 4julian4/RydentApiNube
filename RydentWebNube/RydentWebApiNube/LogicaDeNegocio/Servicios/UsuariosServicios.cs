@@ -46,8 +46,17 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
         {
             using (var _dbcontext = new AppDbContext())
             {
-                var obj = await _dbcontext.TUsuarios.FirstOrDefaultAsync(x => x.correoUsuario == correoUsuario);
-                return obj == null ? new Usuarios() : obj;
+                try
+                {
+                    var obj = await _dbcontext.TUsuarios.FirstOrDefaultAsync(x => x.correoUsuario == correoUsuario);
+                    return obj == null ? new Usuarios() : obj;
+                }
+                catch (Exception e)
+                {
+
+                    throw;
+                }
+                
             }
         }
 

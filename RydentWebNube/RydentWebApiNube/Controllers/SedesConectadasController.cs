@@ -22,6 +22,12 @@ namespace RydentWebApiNube.Controllers
             return Ok(await _sedesconectadasServicios.ConsultarPorId(idSedeConectada));
         }
         [HttpGet]
+        [Route("ConsultarSedePorId/{idSede}")]
+        public async Task<IActionResult> ConsultarSedePorId(int idSede)
+        {
+            return Ok(await _sedesconectadasServicios.ConsultarSedePorId(idSede));
+        }
+        [HttpGet]
         [Route("")]
         public async Task<IActionResult> GetAll()
         {

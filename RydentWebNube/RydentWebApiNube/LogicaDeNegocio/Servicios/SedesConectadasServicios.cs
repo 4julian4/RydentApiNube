@@ -42,6 +42,16 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
             }
         }
 
+        public async Task<SedesConectadas> ConsultarSedePorId(long idSede)
+        {
+            using (var _dbcontext = new AppDbContext())
+            {
+                var obj = await _dbcontext.TSedesConectadas.FirstOrDefaultAsync(x => x.idSede == idSede && x.activo == true);
+                return obj == null ? new SedesConectadas() : obj;
+            }
+        }
+
+        
         public async Task<SedesConectadas> ConsultarPorIdSignalR(string idActualSignalR)
         {
             using (var _dbcontext = new AppDbContext())
@@ -105,6 +115,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
         Task<List<SedesConectadas>> ConsultarPorSedeConEstadoActivo(long idSede);
         Task<List<SedesConectadas>> ConsultarSedesConectadasActivasPorCliente(long idCliente);
         Task<SedesConectadas> ConsultarPorIdSignalR(string idActualSignalR);
+        Task<SedesConectadas> ConsultarSedePorId(long idSede);
 
         Task Borrar(long idSedeConectada);
     }

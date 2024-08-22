@@ -56,6 +56,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
         {
             using (var _dbcontext = new AppDbContext())
             {
+
                 var obj = await _dbcontext.TSedesConectadas.FirstOrDefaultAsync(x => x.idActualSignalR == idActualSignalR);
                 return obj == null ? new SedesConectadas() : obj;
             }

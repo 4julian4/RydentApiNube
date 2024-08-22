@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using RydentWebApiNube.LogicaDeNegocio.DbContexts;
 using RydentWebApiNube.LogicaDeNegocio.Entidades;
 using RydentWebApiNube.LogicaDeNegocio.Servicios;
 using System;
@@ -64,21 +65,36 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             if (sede.idSede > 0)
             {
                 var sedesConectadas = await _sedesconectadasServicios.ConsultarPorSedeConEstadoActivo(sede.idSede);
-                foreach (var item in sedesConectadas)
+                if (sedesConectadas.Count == 0)
                 {
-                    if (item.idActualSignalR != idActualSignalR)
+                    await _sedesconectadasServicios.Agregar(new SedesConectadas
                     {
-                        item.activo = false;
-                        await _sedesconectadasServicios.Editar(item.idSedeConectada, item);
+                        idCliente = sede.idCliente,
+                        idSede = sede.idSede,
+                        idActualSignalR = idActualSignalR,
+                        fechaUltimoAcceso = DateTime.Now,
+                        activo = true
+                    });
+                }
+                else if (sedesConectadas.Count > 0)
+                {
+                    foreach (var item in sedesConectadas)
+                    {
+                        if (item.idActualSignalR != idActualSignalR)
+                        {
+                            item.activo = false;
+                            await _sedesconectadasServicios.Editar(item.idSedeConectada, item);
+                            await _sedesconectadasServicios.Agregar(new SedesConectadas
+                            {
+                                idCliente = sede.idCliente,
+                                idSede = sede.idSede,
+                                idActualSignalR = idActualSignalR,
+                                fechaUltimoAcceso = DateTime.Now,
+                                activo = true
+                            });
+                        }
                     }
                 }
-                await _sedesconectadasServicios.Agregar(new SedesConectadas { 
-                    idCliente = sede.idCliente,
-                    idSede = sede.idSede,
-                    idActualSignalR = idActualSignalR,
-                    fechaUltimoAcceso = DateTime.Now,
-                    activo = true
-                });
                 return;
             }
             await Clients.All.SendAsync("RegistrarEquipo", idActualSignalR, identificadorLocal);
@@ -136,7 +152,14 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await Clients.Client(clienteId).SendAsync("RespuestaObtenerDoctor", clienteId, respuestaObtenerDoctor);
         }
 
+        public async Task<List<SedesConectadas>> ObtenerActualizarSedesActivasPorCliente(long idCliente)
+        {
+            return await _sedesconectadasServicios.ConsultarSedesConectadasActivasPorCliente(idCliente);
+        }
+
         
+
+
         public async Task ObtenerDoctorSiLoCambian(string clienteId, string idDoctor)
         {
             string idActualSignalR = await ValidarIdActualSignalR(clienteId);
@@ -325,6 +348,10 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
             
         }
+
+
+        
+
 
         public async Task RespuestaObtenerDatosEvolucion(string clienteId, string evolucion)
         {

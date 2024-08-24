@@ -25,10 +25,12 @@ builder.Services.AddScoped<IHistorialDePagosServicios, HistorialDePagosServicios
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddSignalR(o =>
 {
     o.EnableDetailedErrors = true;
     o.MaximumReceiveMessageSize = null;
+
 });
 
 builder.Services.AddCors(options =>

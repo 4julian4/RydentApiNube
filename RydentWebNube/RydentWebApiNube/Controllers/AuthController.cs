@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text;
 using RydentWebApiNube.Models.MSN;
 using RydentWebApiNube.Models.Google;
+using System.Net.Http;
 
 namespace RydentWebApiNube.Controllers
 {
@@ -19,7 +20,7 @@ namespace RydentWebApiNube.Controllers
     {
         private readonly IConfiguration configuration;
         private readonly IUsuariosServicios iUsuariosServicios;
-
+        private static readonly HttpClient httpClient = new HttpClient();
         private readonly string AuthCodeEndPoint;
         private readonly string TokenEndPoint;
         private readonly string ClientId;
@@ -73,7 +74,8 @@ namespace RydentWebApiNube.Controllers
         {
             string grant_type = "authorization_code";
 
-            Dictionary<string, string> BodyData = new Dictionary<string, string>()
+            //Dictionary<string, string> BodyData = new Dictionary<string, string>()
+            var BodyData = new Dictionary<string, string>
             {
                 { "grant_type", grant_type },
                 { "code", modelo.code },
@@ -82,32 +84,31 @@ namespace RydentWebApiNube.Controllers
                 { "client_secret", this.Secret },
                 { "scope", this.Scope }
             };
-            HttpClient client = new HttpClient();
+            //HttpClient client = new HttpClient();
             var body = new FormUrlEncodedContent(BodyData);
-            var response = await client.PostAsync(TokenEndPoint, body);
+            var response = await httpClient.PostAsync(TokenEndPoint, body).ConfigureAwait(false);
             var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
 
-            var jsonCOntent = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
 
-            var prettyJson = JsonSerializer.Serialize(jsonCOntent, new JsonSerializerOptions { WriteIndented = true });
+            var accessToken = jsonContent.GetProperty("access_token").GetString();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            var accesToken = JsonDocument.Parse(prettyJson).RootElement.GetProperty("access_token").GetString();
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accesToken);
-
-            var response1 = await httpClient.GetAsync(API_EndPoint);
+            var response1 = await httpClient.GetAsync(API_EndPoint).ConfigureAwait(false);
             dynamic ojJSON = new ExpandoObject();
             ojJSON.respuesta = "";
             ojJSON.autenticado = false;
+
             if (response1.IsSuccessStatusCode)
             {
-                var usrMSNAzure = await response1.Content.ReadAsStringAsync();
-                var jsUsuarioMSN = Newtonsoft.Json.JsonConvert.DeserializeObject<UsuarioMSN>(usrMSNAzure);
+                var usrMSNAzure = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var jsUsuarioMSN = JsonSerializer.Deserialize<UsuarioMSN>(usrMSNAzure);
 
                 status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
                 if (!string.IsNullOrEmpty(jsUsuarioMSN?.id))
                 {
-                    var usuario = await iUsuariosServicios.ConsultarPorCodigoExterno(jsUsuarioMSN.id);
+                    var usuario = await iUsuariosServicios.ConsultarPorCodigoExterno(jsUsuarioMSN.id).ConfigureAwait(false);
                     var respuesta = generateJwtToken(usuario);
                     ojJSON.respuesta = respuesta;
                     ojJSON.autenticado = true;
@@ -121,20 +122,19 @@ namespace RydentWebApiNube.Controllers
             }
         }
         [HttpGet("prueba/{id}")]
-        public async Task<IActionResult> prueba(string id)
+        public IActionResult Prueba(string id)
         {
             string grant_type = "authorization_code";
             string stringURI = new Uri(this.GoogleRedirectURI).ToString();
-            Dictionary<string, string> BodyData = new Dictionary<string, string>()
+            var BodyData = new Dictionary<string, string>
             {
-				//{"Content-Type", "application/x-www-form-urlencoded" },
-				{ "code", "" },
+                { "code", "" },
                 { "client_id", this.GoogleClientId },
                 { "client_secret", this.GoogleSecret },
                 { "redirect_uri", stringURI },
                 { "grant_type", grant_type }
             };
-            if (id == "123") return Ok(BodyData); else return Ok("");
+            return Ok(id == "123" ? BodyData : "");
         }
 
         [HttpPost("authgoogle")]
@@ -142,43 +142,40 @@ namespace RydentWebApiNube.Controllers
         {
             string grant_type = "authorization_code";
             string stringURI = new Uri(this.GoogleRedirectURI).ToString();
-            Dictionary<string, string> BodyData = new Dictionary<string, string>()
+            var BodyData = new Dictionary<string, string>
             {
-				//{"Content-Type", "application/x-www-form-urlencoded" },
-				{ "code", modelo.code },
+                { "code", modelo.code },
                 { "client_id", this.GoogleClientId },
                 { "client_secret", this.GoogleSecret },
                 { "redirect_uri", stringURI },
                 { "grant_type", grant_type }
             };
-            HttpClient client = new HttpClient();
-            var body = new FormUrlEncodedContent(BodyData);
-            //client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/x-www-form-urlencoded");
 
-            var response = await client.PostAsync(this.GoogleTokenEndPoint, body);
+            var body = new FormUrlEncodedContent(BodyData);
+            var response = await httpClient.PostAsync(this.GoogleTokenEndPoint, body).ConfigureAwait(false);
             var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
 
-            var jsonCOntent = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
 
-            var prettyJson = JsonSerializer.Serialize(jsonCOntent, new JsonSerializerOptions { WriteIndented = true });
+            var accessToken = jsonContent.GetProperty("access_token").GetString();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            string DatosUsuarioGoogle = this.GoogleAPI_EndPoint + accessToken;
 
-            var accesToken = JsonDocument.Parse(prettyJson).RootElement.GetProperty("access_token").GetString();
-            var httpClient = new HttpClient();
-            //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accesToken);
-            string DatosUsuarioGoogle = this.GoogleAPI_EndPoint + accesToken;
-            var response1 = await httpClient.GetAsync(DatosUsuarioGoogle);
+            var response1 = await httpClient.GetAsync(DatosUsuarioGoogle).ConfigureAwait(false);
             dynamic ojJSON = new ExpandoObject();
             ojJSON.respuesta = "";
             ojJSON.autenticado = false;
+
             if (response1.IsSuccessStatusCode)
             {
-                var s = await response1.Content.ReadAsStringAsync();
-                var jsUsuarioGoogle = Newtonsoft.Json.JsonConvert.DeserializeObject<UsuarioGoogle>(s);
+                var s = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var jsUsuarioGoogle = JsonSerializer.Deserialize<UsuarioGoogle>(s);
 
                 status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
                 if (!string.IsNullOrEmpty(jsUsuarioGoogle?.email))
                 {
-                    var usuario = await iUsuariosServicios.ConsultarPorCorreo(jsUsuarioGoogle.email);
+                    var usuario = await iUsuariosServicios.ConsultarPorCorreo(jsUsuarioGoogle.email).ConfigureAwait(false);
                     var respuesta = generateJwtToken(usuario);
                     ojJSON.respuesta = respuesta;
                     ojJSON.autenticado = true;
@@ -194,13 +191,14 @@ namespace RydentWebApiNube.Controllers
 
         private string generateJwtToken(Usuarios user)
         {
-            // generate token that is valid for 7 days aca se envia datos para angular
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(configuration["JWT_SECRET"] ?? "");
-            var lstClaims = new List<Claim>();
-            lstClaims.Add(new Claim("id", user.idUsuario.ToString()));
-            lstClaims.Add(new Claim("idCliente", user.idCliente.ToString()));
-            lstClaims.Add(new Claim("correo", user.correoUsuario.ToString()));
+            var lstClaims = new List<Claim>
+            {
+                new Claim("id", user.idUsuario.ToString()),
+                new Claim("idCliente", user.idCliente.ToString()),
+                new Claim("correo", user.correoUsuario.ToString())
+            };
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(lstClaims),
@@ -213,14 +211,12 @@ namespace RydentWebApiNube.Controllers
             return tokenHandler.WriteToken(token);
         }
 
-
-
         [HttpGet("login-callback")]
         public async Task<IActionResult> GetCallback([FromQuery] string code, string state)
         {
             string grant_type = "authorization_code";
 
-            Dictionary<string, string> BodyData = new Dictionary<string, string>()
+            var BodyData = new Dictionary<string, string>
             {
                 { "grant_type", grant_type },
                 { "code", code },
@@ -229,45 +225,37 @@ namespace RydentWebApiNube.Controllers
                 { "client_secret", this.Secret },
                 { "scope", this.Scope }
             };
-            HttpClient client = new HttpClient();
+
             var body = new FormUrlEncodedContent(BodyData);
-            var response = await client.PostAsync(TokenEndPoint, body);
+            var response = await httpClient.PostAsync(TokenEndPoint, body).ConfigureAwait(false);
             var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
 
-            var jsonCOntent = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
 
-            var prettyJson = JsonSerializer.Serialize(jsonCOntent, new JsonSerializerOptions { WriteIndented = true });
-
-            var accesToken = JsonDocument.Parse(prettyJson).RootElement.GetProperty("access_token").GetString();
-            var jwtToken = new JwtSecurityToken(accesToken);
+            var accessToken = jsonContent.GetProperty("access_token").GetString();
+            var jwtToken = new JwtSecurityToken(accessToken);
             var ss = jwtToken.Subject;
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accesToken);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            var response1 = await httpClient.GetAsync(API_EndPoint);
+            var response1 = await httpClient.GetAsync(API_EndPoint).ConfigureAwait(false);
             if (response1.IsSuccessStatusCode)
             {
-                var resultado = await response1.Content.ReadAsStringAsync();
+                var resultado = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var jsonRes = JsonSerializer.Deserialize<JsonElement>(resultado, new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                });
 
-                var jsonResult = Newtonsoft.Json.JsonConvert.DeserializeObject(resultado) as Newtonsoft.Json.Linq.JObject;
-                var js = Newtonsoft.Json.JsonConvert.DeserializeObject(resultado);
-                var jsonRes = JsonSerializer.Deserialize<JsonElement>(resultado);
-                var js2 = JsonSerializer.Deserialize<JsonElement>(jsonRes,
-                        new JsonSerializerOptions
-                        {
-                            WriteIndented = true,
-                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-
-                        }
-                    );
                 status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
-                return Ok($"{status + Environment.NewLine}{js2 + Environment.NewLine}{response1.IsSuccessStatusCode}");
+                return Ok($"{status + Environment.NewLine}{jsonRes + Environment.NewLine}{response1.IsSuccessStatusCode}");
             }
             else
             {
                 return Ok($"{status + Environment.NewLine}{prettyJson + Environment.NewLine}{response.IsSuccessStatusCode}");
             }
-
         }
     }
 }
+

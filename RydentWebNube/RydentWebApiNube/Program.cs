@@ -1,5 +1,6 @@
 using RydentWebApiNube.LogicaDeNegocio.Hubs;
 using RydentWebApiNube.LogicaDeNegocio.Servicios;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -46,6 +47,14 @@ builder.Services.AddCors(options =>
                       });
 });
 
+
+// Habilitar compresión de respuestas
+builder.Services.AddResponseCompression(options =>
+{
+    options.Providers.Add<GzipCompressionProvider>();
+    options.EnableForHttps = true;
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -61,6 +70,9 @@ app.UseRouting();
 app.UseCors("RydentWebCORS"); // Posiciona esto antes de UseEndpoints
 
 app.UseAuthorization();
+
+// Middleware para manejar excepciones globalmente
+app.UseExceptionHandler("/error");
 
 app.UseEndpoints(endpoints =>
 {

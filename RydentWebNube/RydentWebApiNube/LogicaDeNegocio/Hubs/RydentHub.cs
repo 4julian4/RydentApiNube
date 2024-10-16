@@ -2,21 +2,59 @@
 using RydentWebApiNube.LogicaDeNegocio.DbContexts;
 using RydentWebApiNube.LogicaDeNegocio.Entidades;
 using RydentWebApiNube.LogicaDeNegocio.Servicios;
+using RydentWebApiNube.Models.Google;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Dynamic;
+using System.Net.Http.Headers;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Text.Json;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 {
     public class RydentHub : Hub
     {
         private readonly ISedesServicios _sedesServicios;
+        //private readonly IConfiguration configuration;
         private readonly ISedesConectadasServicios _sedesconectadasServicios;
-        public RydentHub(ISedesServicios sedesServicios, ISedesConectadasServicios sedesconectadasServicios)
+        private static readonly HttpClient httpClient = new HttpClient();
+        //private readonly HttpClient httpClient;
+        private readonly IUsuariosServicios iUsuariosServicios;
+        private readonly IConfiguration configuration;
+        private readonly string GoogleRedirectURI;
+        private readonly string GoogleClientId;
+        private readonly string GoogleSecret;
+        private readonly string GoogleTokenEndPoint;
+        private readonly string GoogleAPI_EndPoint;
+        private readonly string TokenEndPoint;
+        private readonly string JWT_SECRET;
+        private readonly string JWT;
+
+        
+
+        public RydentHub(
+            ISedesServicios sedesServicios,
+            ISedesConectadasServicios sedesconectadasServicios,
+            IConfiguration configuration,
+            IUsuariosServicios iUsuariosServicios
+            )
         {
             _sedesServicios = sedesServicios;
             _sedesconectadasServicios = sedesconectadasServicios;
+            this.iUsuariosServicios = iUsuariosServicios;
+            this.GoogleTokenEndPoint = configuration["OAuthGoogle:TokenEndPoint"] ?? "";
+            this.GoogleRedirectURI = configuration["OAuthGoogle:RedirectURI"] ?? "";
+            this.GoogleClientId = configuration["OAUTH2_GOOGLE_CLIENTID"] ?? "";
+            this.GoogleSecret = configuration["OAUTH2_GOOGLE_SECRET"] ?? "";
+            this.GoogleAPI_EndPoint = configuration["OAuthGoogle:API_EndPoint"] ?? "";
+            this.TokenEndPoint = configuration["OAuth:TokenEndPoint"] ?? "";
+            this.JWT_SECRET = configuration["JWT_SECRET"] ?? "";
+            this.JWT = configuration["Jwt:Issuer"] ?? "";
         }
         //public async Task SendMessage(string user, string message)
         //{
@@ -39,6 +77,79 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 Console.Error.WriteLine($"Error al manejar la desconexión: {ex.Message}");
             }
             await base.OnDisconnectedAsync(exception);
+        }
+
+        public async Task PostLoginCallbackGoogle(string clienteId, string code, string state)
+        {
+            // Diccionario con parámetros de autenticación
+            string grant_type = "authorization_code";
+            string stringURI = new Uri(this.GoogleRedirectURI).ToString();
+            var BodyData = new Dictionary<string, string>
+            {
+                { "code", code },
+                { "client_id", this.GoogleClientId },
+                { "client_secret", this.GoogleSecret },
+                { "redirect_uri", stringURI },
+                { "grant_type", grant_type }
+            };
+            
+
+            var body = new FormUrlEncodedContent(BodyData);
+            var response = await httpClient.PostAsync(this.GoogleTokenEndPoint, body).ConfigureAwait(false);
+            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+
+            var result = new ExpandoObject() as IDictionary<string, Object>;
+            result["respuesta"] = "";
+            result["autenticado"] = false;
+
+            if (response.IsSuccessStatusCode)
+            {
+                var accessToken = jsonContent.GetProperty("access_token").GetString();
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                string googleApiUrl = this.GoogleAPI_EndPoint + accessToken;
+
+                var googleResponse = await httpClient.GetAsync(googleApiUrl).ConfigureAwait(false);
+                if (googleResponse.IsSuccessStatusCode)
+                {
+                    var googleData = await googleResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var googleUser = JsonSerializer.Deserialize<UsuarioGoogle>(googleData);
+
+                    if (!string.IsNullOrEmpty(googleUser?.email))
+                    {
+                        var usuario = await iUsuariosServicios.ConsultarPorCorreo(googleUser.email).ConfigureAwait(false);
+                        var jwtToken = generateJwtToken(usuario);
+                        result["respuesta"] = jwtToken;
+                        result["autenticado"] = true;
+                    }
+                }
+            }
+
+            // Emitir respuesta de autenticación a cliente específico
+            string jsonResult = JsonSerializer.Serialize(result); // Convertir a string
+            await Clients.Caller.SendAsync("RespuestaPostLoginCallbackGoogle", clienteId, jsonResult);
+        }
+
+
+        private string generateJwtToken(Usuarios user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(this.JWT_SECRET);
+            var lstClaims = new List<Claim>
+            {
+                new Claim("id", user.idUsuario.ToString()),
+                new Claim("idCliente", user.idCliente.ToString()),
+                new Claim("correo", user.correoUsuario.ToString())
+            };
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(lstClaims),
+                Expires = DateTime.UtcNow.AddDays(7),
+                Issuer = this.JWT ?? "",
+                Audience = this.JWT_SECRET ?? "",
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
         private async Task<string> ValidarIdActualSignalR(string idActualSignalR)
         {

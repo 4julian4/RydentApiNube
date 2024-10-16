@@ -78,6 +78,7 @@ app.UseEndpoints(endpoints =>
 {
     endpoints.MapHub<RydentHub>("/rydenthub");
     endpoints.MapControllers();
+
 });
 
 app.Run();

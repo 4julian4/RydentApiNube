@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3  # Cambiado a v3
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
@@ -31,7 +31,7 @@ jobs:
         run: dotnet publish -c Release -o ${{ github.workspace }}/publish
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3  # Cambiado de v2 a v3
         with:
           name: .net-app
           path: ${{ github.workspace }}/publish
@@ -42,11 +42,11 @@ jobs:
     environment:
       name: 'Production'
     permissions:
-      id-token: write #This is required for requesting the JWT
+      id-token: write # This is required for requesting the JWT
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3  # Cambiado a v3
         with:
           name: .net-app
           path: ${{ github.workspace }}/publish
@@ -57,7 +57,6 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_423F7951580647BB840379C00BE213A6 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C4CDD21BFE654E2BA497D1FD33A6BC9D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5B69B619B8954CA8B1CB34B64D6F7752 }}
-                 
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2

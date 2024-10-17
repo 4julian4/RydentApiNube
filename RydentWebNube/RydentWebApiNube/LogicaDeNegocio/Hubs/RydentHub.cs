@@ -67,10 +67,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             this.Scope = configuration["OAuth:Scope"] ?? "";
             this.API_EndPoint = configuration["OAuth:API_EndPoint"] ?? "";
         }
-        //public async Task SendMessage(string user, string message)
-        //{
-        //    await Clients.All.SendAsync("ReceiveMessage", user, message);
-        //}
+        
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             try

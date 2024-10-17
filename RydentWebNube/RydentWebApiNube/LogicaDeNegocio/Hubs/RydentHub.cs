@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using RydentWebApiNube.Models.MSN;
 
 namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 {
@@ -34,8 +35,13 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         private readonly string TokenEndPoint;
         private readonly string JWT_SECRET;
         private readonly string JWT;
+        private readonly string RedirectURI;
+        private readonly string ClientId;
+        private readonly string Secret;
+        private readonly string Scope;
+        private readonly string API_EndPoint;
 
-        
+
 
         public RydentHub(
             ISedesServicios sedesServicios,
@@ -55,6 +61,11 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             this.TokenEndPoint = configuration["OAuth:TokenEndPoint"] ?? "";
             this.JWT_SECRET = configuration["JWT_SECRET"] ?? "";
             this.JWT = configuration["Jwt:Issuer"] ?? "";
+            this.RedirectURI = configuration["OAuth:RedirectURI"] ?? "";
+            this.ClientId = configuration["OAUTH2_AZURE_CLIENTID"] ?? "";
+            this.Secret = configuration["OAUTH2_AZURE_SECRET"] ?? "";
+            this.Scope = configuration["OAuth:Scope"] ?? "";
+            this.API_EndPoint = configuration["OAuth:API_EndPoint"] ?? "";
         }
         //public async Task SendMessage(string user, string message)
         //{
@@ -79,6 +90,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
+        //autenticar google
         public async Task PostLoginCallbackGoogle(string clienteId, string code, string state)
         {
             // Diccionario con parámetros de autenticación
@@ -128,6 +140,69 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             string jsonResult = JsonSerializer.Serialize(result); // Convertir a string
             await Clients.Caller.SendAsync("RespuestaPostLoginCallbackGoogle", clienteId, jsonResult);
         }
+
+        public async Task PostLoginCallback(string clienteId, string code, string state)
+        {
+            // Diccionario con parámetros de autenticación
+            string grant_type = "authorization_code";
+
+            // Datos del cuerpo de la solicitud para obtener el token
+            var BodyData = new Dictionary<string, string>
+            {
+                { "grant_type", grant_type },
+                { "code", code },
+                { "Redirect_uri", this.RedirectURI },
+                { "client_id", this.ClientId },
+                { "client_secret", this.Secret },
+                { "scope", this.Scope }
+            };
+
+            // Enviar solicitud para obtener el token
+            var body = new FormUrlEncodedContent(BodyData);
+            var response = await httpClient.PostAsync(this.TokenEndPoint, body).ConfigureAwait(false);
+            var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+
+            // Deserializar respuesta en JSON
+            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
+
+            // Extraer el token de acceso
+            var accessToken = jsonContent.GetProperty("access_token").GetString();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            // Realizar la solicitud autenticada para obtener información del usuario
+            var response1 = await httpClient.GetAsync(API_EndPoint).ConfigureAwait(false);
+
+            // Inicializar el objeto de resultado para el cliente
+            var result = new ExpandoObject() as IDictionary<string, Object>;
+            result["respuesta"] = "";
+            result["autenticado"] = false;
+
+            // Verificar si la solicitud fue exitosa
+            if (response1.IsSuccessStatusCode)
+            {
+                var usrMSNAzure = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var jsUsuarioMSN = JsonSerializer.Deserialize<UsuarioMSN>(usrMSNAzure);
+
+                status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
+
+                // Verificar si el usuario fue encontrado
+                if (!string.IsNullOrEmpty(jsUsuarioMSN?.mail))
+                {
+                    var usuario = await iUsuariosServicios.ConsultarPorCorreo(jsUsuarioMSN.mail).ConfigureAwait(false);
+                    var respuesta = generateJwtToken(usuario);
+                    result["respuesta"] = respuesta;
+                    result["autenticado"] = true;
+                }
+            }
+
+            // Serializar el resultado a JSON para enviarlo al cliente
+            string jsonResult = JsonSerializer.Serialize(result);
+
+            // Emitir respuesta de autenticación a cliente específico
+            await Clients.Caller.SendAsync("RespuestaPostLoginCallback", clienteId, jsonResult);
+        }
+
 
 
         private string generateJwtToken(Usuarios user)

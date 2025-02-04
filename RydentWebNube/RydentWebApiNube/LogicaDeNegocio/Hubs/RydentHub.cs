@@ -68,24 +68,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             this.API_EndPoint = configuration["OAuth:API_EndPoint"] ?? "";
         }
         
-        public override async Task OnDisconnectedAsync(Exception exception)
-        {
-            try
-            {
-                var objSedesConectada = await _sedesconectadasServicios.ConsultarPorIdSignalR(Context.ConnectionId);
-                if (objSedesConectada.idSedeConectada > 0 && (objSedesConectada.activo ?? false))
-                {
-                    objSedesConectada.activo = false;
-                    await _sedesconectadasServicios.Editar(objSedesConectada.idSedeConectada, objSedesConectada);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Manejo de errores en la lógica de desconexión
-                Console.Error.WriteLine($"Error al manejar la desconexión: {ex.Message}");
-            }
-            await base.OnDisconnectedAsync(exception);
-        }
+        
 
         //autenticar google
         public async Task PostLoginCallbackGoogle(string clienteId, string code, string state)
@@ -200,7 +183,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await Clients.Caller.SendAsync("RespuestaPostLoginCallback", clienteId, jsonResult);
         }
 
-
+        
 
         private string generateJwtToken(Usuarios user)
         {
@@ -222,6 +205,24 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        public override async Task OnDisconnectedAsync(Exception exception)
+        {
+            try
+            {
+                var objSedesConectada = await _sedesconectadasServicios.ConsultarPorIdSignalR(Context.ConnectionId);
+                if (objSedesConectada?.idSedeConectada > 0 && (objSedesConectada.activo ?? false))
+                {
+                    objSedesConectada.activo = false;
+                    await _sedesconectadasServicios.Editar(objSedesConectada.idSedeConectada, objSedesConectada);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error al manejar la desconexión: {ex.Message}");
+            }
+            await base.OnDisconnectedAsync(exception);
         }
         private async Task<string> ValidarIdActualSignalR(string idActualSignalR)
         {
@@ -262,52 +263,66 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
         }
 
+
+        // Método que verifica si el dispositivo ya está registrado
+        public async Task<bool> IsDeviceRegistered(string idActualSignalR)
+        {                       
+            try
+            {
+                // Consultar si ya existe un dispositivo con este SignalR ID activo
+                var objSedesConectada = await _sedesconectadasServicios.ConsultarPorIdSignalR(idActualSignalR);
+                return objSedesConectada != null && (objSedesConectada.activo ?? false);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la consulta
+                Console.Error.WriteLine($"Error al verificar si el dispositivo está registrado: {ex.Message}");
+                return false; // Si ocurre un error, considera que no está registrado
+            }
+        }
+
+        // Método para registrar un dispositivo
         public async Task RegistrarEquipo(string idActualSignalR, string identificadorLocal)
         {
             try
             {
                 var sede = await _sedesServicios.ConsultarSedePorIdentificadorLocal(identificadorLocal);
-                if (sede.idSede > 0)
+                if (sede?.idSede > 0)
                 {
-                    var sedesConectadas = await _sedesconectadasServicios.ConsultarPorSedeConEstadoActivo(sede.idSede);
-                    if (sedesConectadas.Count == 0)
+                    // Desactivar conexiones previas
+                    await DesactivarConexionesPrevias(sede.idSede);
+
+                    // Registrar nuevo dispositivo
+                    await _sedesconectadasServicios.Agregar(new SedesConectadas
                     {
-                        await _sedesconectadasServicios.Agregar(new SedesConectadas
-                        {
-                            idCliente = sede.idCliente,
-                            idSede = sede.idSede,
-                            idActualSignalR = idActualSignalR,
-                            fechaUltimoAcceso = DateTime.Now,
-                            activo = true
-                        });
-                    }
-                    else if (sedesConectadas.Count > 0)
-                    {
-                        foreach (var item in sedesConectadas)
-                        {
-                            if (item.idActualSignalR != idActualSignalR)
-                            {
-                                item.activo = false;
-                                await _sedesconectadasServicios.Editar(item.idSedeConectada, item);
-                                await _sedesconectadasServicios.Agregar(new SedesConectadas
-                                {
-                                    idCliente = sede.idCliente,
-                                    idSede = sede.idSede,
-                                    idActualSignalR = idActualSignalR,
-                                    fechaUltimoAcceso = DateTime.Now,
-                                    activo = true
-                                });
-                            }
-                        }
-                    }
-                    return;
+                        idCliente = sede.idCliente,
+                        idSede = sede.idSede,
+                        idActualSignalR = idActualSignalR,
+                        fechaUltimoAcceso = DateTime.Now,
+                        activo = true
+                    });
+
+                    Console.WriteLine($"Dispositivo registrado correctamente: {idActualSignalR}");
                 }
-                await Clients.All.SendAsync("RegistrarEquipo", idActualSignalR, identificadorLocal);
+                else
+                {
+                    Console.WriteLine("Identificador local no válido o no se encontró la sede.");
+                }
             }
             catch (Exception ex)
             {
-                // Manejo de errores en el registro del equipo
                 Console.Error.WriteLine($"Error al registrar equipo: {ex.Message}");
+            }
+        }
+
+        private async Task DesactivarConexionesPrevias(long idSede)
+        {
+            var conexionesActivas = await _sedesconectadasServicios.ConsultarPorSedeConEstadoActivo(idSede);
+
+            foreach (var conexion in conexionesActivas)
+            {
+                conexion.activo = false;
+                await _sedesconectadasServicios.Editar(conexion.idSedeConectada, conexion);
             }
         }
 
@@ -679,6 +694,54 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         }
 
 
+        // Editar antecedentes
+
+        public async Task EditarAntecedentes(string clienteId, string antecedentesPaciente)
+        {
+            try
+            {
+                //-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(clienteId).SendAsync("EditarAntecedentes", Context.ConnectionId, antecedentesPaciente);
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
+
+        }
+
+        public async Task RespuestaEditarAntecedentes(string clienteId, string respuesta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaEditarAntecedentes" +
+                    "", clienteId, respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
+        }
+
+
         public async Task ObtenerDatosEvolucion(string clienteId, string idAnanesis)
         {
             try
@@ -770,6 +833,102 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
         }
+
+
+
+        public async Task GuardarDatosPersonales(string clienteId, string datosPersonales)
+        {
+            try
+            {
+                //-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(clienteId).SendAsync("GuardarDatosPersonales", Context.ConnectionId, datosPersonales);
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
+
+        }
+
+        public async Task RespuestaGuardarDatosPersonales(string clienteId, string respuesta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaGuardarDatosPersonales" +
+                    "", clienteId, respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
+        }
+
+
+        public async Task EditarDatosPersonales(string clienteId, string datosPersonales)
+        {
+            try
+            {
+                //-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(clienteId).SendAsync("EditarDatosPersonales", Context.ConnectionId, datosPersonales);
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
+
+        }
+
+        public async Task RespuestaEditarDatosPersonales(string clienteId, string respuesta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaEditarDatosPersonales" +
+                    "", clienteId, respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
+        }
+
+
+
 
         public async Task GuardarDatosRips(string clienteId, string datosRips)
         {

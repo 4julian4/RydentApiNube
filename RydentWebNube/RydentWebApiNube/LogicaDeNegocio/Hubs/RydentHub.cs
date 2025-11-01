@@ -15,6 +15,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using RydentWebApiNube.Models.MSN;
+using Microsoft.AspNetCore.Mvc;
 
 namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 {
@@ -326,14 +327,14 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
         }
 
-        public async Task ObtenerPin(string clienteId, string pin)
+        public async Task ObtenerPin(string clienteId, string pin, int maxIdAnamnesis)
         {
             try
             {
                 string idActualSignalR = await ValidarIdActualSignalR(clienteId);
                 if (!string.IsNullOrEmpty(idActualSignalR))
                 {
-                    await Clients.Client(idActualSignalR).SendAsync("ObtenerPin", Context.ConnectionId, pin);
+                    await Clients.Client(idActualSignalR).SendAsync("ObtenerPin", Context.ConnectionId, pin, maxIdAnamnesis);
                 }
                 else
                 {
@@ -927,6 +928,49 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
         }
 
+        // listar facturas entre fechas por id
+
+        public async Task ObtenerFacturasPorIdEntreFechas(string clienteId, string modeloDatosParaConsultarFacturasEntreFechas)
+        {
+            try
+            {
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(clienteId).SendAsync("ObtenerFacturasPorIdEntreFechas", Context.ConnectionId, modeloDatosParaConsultarFacturasEntreFechas);
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
+        }
+
+        public async Task RespuestaObtenerFacturasPorIdEntreFechas(string clienteId, string respuesta)
+        {
+            try 
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaObtenerFacturasPorIdEntreFechas", clienteId, respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
+        }
 
 
 
@@ -973,7 +1017,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
         }
 
-        public async Task ObtenerDatosAdministrativos(string clienteId, DateTime fechaInicio, DateTime fechaFin)
+        public async Task PresentarRips(string clienteId, int identificador, string objPresentarRips)
         {
             try
             {
@@ -982,7 +1026,185 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 {
                     try
                     {
-                        await Clients.Client(clienteId).SendAsync("ObtenerDatosAdministrativos", Context.ConnectionId, fechaInicio, fechaFin);
+                        await Clients.Client(clienteId).SendAsync("PresentarRips", Context.ConnectionId, identificador, objPresentarRips);
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
+
+        }
+
+        public async Task RespuestaPresentarRips(string clienteId, string respuesta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaPresentarRips", clienteId, respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
+        }
+                
+        public async Task GenerarRips(string clienteId, int identificador, string objGenerarRips)
+        {
+            try
+            {
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(clienteId).SendAsync("GenerarRips", Context.ConnectionId, identificador, objGenerarRips);
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
+
+        }
+
+        public async Task RespuestaGenerarRips(string clienteId, string respuesta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaGenerarRips", clienteId, respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
+        }
+
+        public async Task ObtenerFacturasPendientes(string clienteId)
+        {
+            try
+            {
+                //-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(clienteId).SendAsync("ObtenerFacturasPendientes", Context.ConnectionId);
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
+
+        }
+
+        public async Task RespuestaObtenerFacturasPendientes(string clienteId, string facturasPendientes)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaObtenerFacturasPendientes", clienteId, facturasPendientes);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
+
+        }
+
+
+		public async Task ObtenerFacturasCreadas(string clienteId, string Factura)
+		{
+			try
+			{
+				//-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
+				string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+				if (idActualSignalR != "")
+				{
+					try
+					{
+						await Clients.Client(idActualSignalR).SendAsync("ObtenerFacturasCreadas", Context.ConnectionId, Factura ?? "");
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", idActualSignalR, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", idActualSignalR, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+				// Manejo de errores en la obtención del doctor
+				Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+			}
+
+		}
+
+		public async Task RespuestaObtenerFacturasCreadas(string clienteId, string facturasCreadas)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync("RespuestaObtenerFacturasCreadas", clienteId, facturasCreadas);
+			}
+			catch (Exception ex)
+			{
+				// Manejo de errores en la respuesta del doctor
+				Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+			}
+
+		}
+
+
+		public async Task ObtenerDatosAdministrativos(string clienteId, int idDoctor, DateTime fechaInicio, DateTime fechaFin)
+        {
+            try
+            {
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(clienteId).SendAsync("ObtenerDatosAdministrativos", Context.ConnectionId, idDoctor, fechaInicio, fechaFin);
                     }
                     catch (Exception e)
                     {

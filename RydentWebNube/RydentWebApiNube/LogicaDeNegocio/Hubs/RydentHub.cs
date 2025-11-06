@@ -1195,6 +1195,81 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 		}
 
 
+		public async Task PresentarFacturasEnDian(string clienteId, string payloadJson)
+		{
+			try
+			{
+				string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+				if (!string.IsNullOrEmpty(idActualSignalR))
+				{
+					try
+					{
+						// Enviamos al cliente local (worker) la orden con el payload
+						await Clients.Client(clienteId).SendAsync(
+							"PresentarFacturasEnDian",
+							Context.ConnectionId, // para que el worker sepa a quién devolver
+							payloadJson
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+				Console.Error.WriteLine($"Error en PresentarFacturasEnDian: {ex.Message}");
+			}
+		}
+
+		// 2) CLIENTE LOCAL (WORKER) -> CLOUD -> FRONT (PROGRESO OPCIONAL POR FACTURA)
+		// El worker puede ir reportando progreso por cada documento procesado.
+		public async Task RespuestaProgresoPresentacion(
+			string clienteIdDestino, // este es el Context.ConnectionId que enviaste arriba
+			string progresoJson      // ej: { "documentRef":"33112", "status":"ENVIADA", "mensaje":"..." }
+		)
+		{
+			try
+			{
+				await Clients.Client(clienteIdDestino)
+					.SendAsync("ProgresoPresentacionFactura", clienteIdDestino, progresoJson);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al reenviar progreso: {ex.Message}");
+			}
+		}
+
+		// 3) CLIENTE LOCAL (WORKER) -> CLOUD -> FRONT (RESUMEN FINAL)
+		// Cuando el worker termina todo el lote (o el individual), envía un resumen:
+		//   Ejemplo de resumenJson:
+		//   { "total": 5, "ok": 4, "fail": 1, "errores": [ { "documentRef":"33115", "motivo":"Fecha > 10 días" } ] }
+		public async Task RespuestaPresentarFacturasEnDian(
+			string clienteIdDestino, // el Context.ConnectionId del Angular cloud
+			string resumenJson
+		)
+		{
+			try
+			{
+				await Clients.Client(clienteIdDestino)
+					.SendAsync("RespuestaPresentarFacturasEnDian", clienteIdDestino, resumenJson);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar resumen de presentación: {ex.Message}");
+			}
+		}
+
+
 		public async Task ObtenerDatosAdministrativos(string clienteId, int idDoctor, DateTime fechaInicio, DateTime fechaFin)
         {
             try

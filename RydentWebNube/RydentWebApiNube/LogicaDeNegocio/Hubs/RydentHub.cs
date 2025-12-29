@@ -68,8 +68,8 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             this.Scope = configuration["OAuth:Scope"] ?? "";
             this.API_EndPoint = configuration["OAuth:API_EndPoint"] ?? "";
         }
-        
-        
+
+
 
         //autenticar google
         public async Task PostLoginCallbackGoogle(string clienteId, string code, string state)
@@ -85,7 +85,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 { "redirect_uri", stringURI },
                 { "grant_type", grant_type }
             };
-            
+
 
             var body = new FormUrlEncodedContent(BodyData);
             var response = await httpClient.PostAsync(this.GoogleTokenEndPoint, body).ConfigureAwait(false);
@@ -184,7 +184,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await Clients.Caller.SendAsync("RespuestaPostLoginCallback", clienteId, jsonResult);
         }
 
-        
+
 
         private string generateJwtToken(Usuarios user)
         {
@@ -267,7 +267,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 
         // Método que verifica si el dispositivo ya está registrado
         public async Task<bool> IsDeviceRegistered(string idActualSignalR)
-        {                       
+        {
             try
             {
                 // Consultar si ya existe un dispositivo con este SignalR ID activo
@@ -384,7 +384,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-            
+
         }
 
         public async Task RespuestaObtenerDoctor(string clienteId, string respuestaObtenerDoctor)
@@ -415,7 +415,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
         }
 
-        
+
 
 
         public async Task ObtenerDoctorSiLoCambian(string clienteId, string idDoctor)
@@ -438,7 +438,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-            
+
         }
 
         public async Task RespuestaObtenerDoctorSiLoCambian(string clienteId, string respuestaObtenerDoctor)
@@ -452,7 +452,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la respuesta del doctor
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
-            
+
         }
 
         //----------------ConsultarPorDiaYPorUnidad en Base de Datos Rydent Local----------------
@@ -489,7 +489,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-                       
+
         }
 
         public async Task RespuestaAgendarCita(string clienteId, string modelocrearcita)
@@ -504,12 +504,12 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la respuesta del doctor
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
-            
+
         }
 
 
-        
-        
+
+
         public async Task BuscarPaciente(string clienteId, string tipoBuqueda, string valorDeBusqueda)
         {
             try
@@ -538,8 +538,8 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-            
-            
+
+
         }
 
         public async Task RespuestaBuscarPaciente(string clienteId, string listPacientes)
@@ -554,9 +554,9 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la respuesta del doctor
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
-           
+
         }
-        
+
         public async Task BuscarCitasPacienteAgenda(string clienteId, string valorBuscarAgenda)
         {
             try
@@ -585,9 +585,9 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-                        
+
         }
-        
+
         public async Task RespuestaBuscarCitasPacienteAgenda(string clienteId, string listPacientes)
         {
             try
@@ -632,7 +632,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-            
+
         }
 
         public async Task RespuestaObtenerDatosPersonalesCompletosPaciente(string clienteId, string paciente)
@@ -677,7 +677,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-            
+
         }
 
         public async Task RespuestaObtenerAntecedentesPaciente(string clienteId, string paciente)
@@ -691,7 +691,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la respuesta del doctor
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
-            
+
         }
 
 
@@ -771,11 +771,11 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-                        
+
         }
 
 
-        
+
 
 
         public async Task RespuestaObtenerDatosEvolucion(string clienteId, string evolucion)
@@ -819,7 +819,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-                        
+
         }
 
         public async Task RespuestaGuardarDatosEvolucion(string clienteId, string respuesta)
@@ -961,7 +961,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 
         public async Task RespuestaObtenerFacturasPorIdEntreFechas(string clienteId, string respuesta)
         {
-            try 
+            try
             {
                 await Clients.Client(clienteId).SendAsync("RespuestaObtenerFacturasPorIdEntreFechas", clienteId, respuesta);
             }
@@ -1001,7 +1001,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-            
+
         }
 
         public async Task RespuestaGuardarDatosRips(string clienteId, bool respuesta)
@@ -1059,7 +1059,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
         }
-                
+
         public async Task GenerarRips(string clienteId, int identificador, string objGenerarRips)
         {
             try
@@ -1149,128 +1149,125 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         }
 
 
-		public async Task ObtenerFacturasCreadas(string clienteId, string Factura)
-		{
-			try
-			{
-				//-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
-				string idActualSignalR = await ValidarIdActualSignalR(clienteId);
-				if (idActualSignalR != "")
-				{
-					try
-					{
-						await Clients.Client(idActualSignalR).SendAsync("ObtenerFacturasCreadas", Context.ConnectionId, Factura ?? "");
-					}
-					catch (Exception e)
-					{
-						await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", idActualSignalR, e.Message);
-					}
-				}
-				else
-				{
-					await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", idActualSignalR, "no se encontro conexion activa");
-				}
-			}
-			catch (Exception ex)
-			{
-				await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
-				// Manejo de errores en la obtención del doctor
-				Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
-			}
+        public async Task ObtenerFacturasCreadas(string clienteId, string Factura)
+        {
+            try
+            {
+                //-----Context.ConnectionId es el identificador del equipo que realiza la consulta es decir del cliente angular del que esta en la nube
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (idActualSignalR != "")
+                {
+                    try
+                    {
+                        await Clients.Client(idActualSignalR).SendAsync("ObtenerFacturasCreadas", Context.ConnectionId, Factura ?? "");
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", idActualSignalR, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", idActualSignalR, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                // Manejo de errores en la obtención del doctor
+                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+            }
 
-		}
+        }
 
-		public async Task RespuestaObtenerFacturasCreadas(string clienteId, string facturasCreadas)
-		{
-			try
-			{
-				await Clients.Client(clienteId).SendAsync("RespuestaObtenerFacturasCreadas", clienteId, facturasCreadas);
-			}
-			catch (Exception ex)
-			{
-				// Manejo de errores en la respuesta del doctor
-				Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
-			}
+        public async Task RespuestaObtenerFacturasCreadas(string clienteId, string facturasCreadas)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync("RespuestaObtenerFacturasCreadas", clienteId, facturasCreadas);
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores en la respuesta del doctor
+                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+            }
 
-		}
-
-
-		public async Task PresentarFacturasEnDian(string clienteId, string payloadJson)
-		{
-			try
-			{
-				string idActualSignalR = await ValidarIdActualSignalR(clienteId);
-				if (!string.IsNullOrEmpty(idActualSignalR))
-				{
-					try
-					{
-						// Enviamos al cliente local (worker) la orden con el payload
-						await Clients.Client(clienteId).SendAsync(
-							"PresentarFacturasEnDian",
-							Context.ConnectionId, // para que el worker sepa a quién devolver
-							payloadJson
-						);
-					}
-					catch (Exception e)
-					{
-						await Clients.Client(Context.ConnectionId)
-							.SendAsync("ErrorConexion", clienteId, e.Message);
-					}
-				}
-				else
-				{
-					await Clients.Client(Context.ConnectionId)
-						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
-				}
-			}
-			catch (Exception ex)
-			{
-				await Clients.Client(Context.ConnectionId)
-					.SendAsync("ErrorConexion", clienteId, ex.Message);
-				Console.Error.WriteLine($"Error en PresentarFacturasEnDian: {ex.Message}");
-			}
-		}
-
-		// 2) CLIENTE LOCAL (WORKER) -> CLOUD -> FRONT (PROGRESO OPCIONAL POR FACTURA)
-		// El worker puede ir reportando progreso por cada documento procesado.
-		public async Task RespuestaProgresoPresentacion(
-			string clienteIdDestino, // este es el Context.ConnectionId que enviaste arriba
-			string progresoJson      // ej: { "documentRef":"33112", "status":"ENVIADA", "mensaje":"..." }
-		)
-		{
-			try
-			{
-				await Clients.Client(clienteIdDestino)
-					.SendAsync("ProgresoPresentacionFactura", clienteIdDestino, progresoJson);
-			}
-			catch (Exception ex)
-			{
-				Console.Error.WriteLine($"Error al reenviar progreso: {ex.Message}");
-			}
-		}
-
-		// 3) CLIENTE LOCAL (WORKER) -> CLOUD -> FRONT (RESUMEN FINAL)
-		// Cuando el worker termina todo el lote (o el individual), envía un resumen:
-		//   Ejemplo de resumenJson:
-		//   { "total": 5, "ok": 4, "fail": 1, "errores": [ { "documentRef":"33115", "motivo":"Fecha > 10 días" } ] }
-		public async Task RespuestaPresentarFacturasEnDian(
-			string clienteIdDestino, // el Context.ConnectionId del Angular cloud
-			string resumenJson
-		)
-		{
-			try
-			{
-				await Clients.Client(clienteIdDestino)
-					.SendAsync("RespuestaPresentarFacturasEnDian", clienteIdDestino, resumenJson);
-			}
-			catch (Exception ex)
-			{
-				Console.Error.WriteLine($"Error al enviar resumen de presentación: {ex.Message}");
-			}
-		}
+        }
 
 
-		public async Task ObtenerDatosAdministrativos(string clienteId, int idDoctor, DateTime fechaInicio, DateTime fechaFin)
+        public async Task PresentarFacturasEnDian(string clienteId, string payloadJson)
+        {
+            try
+            {
+                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+                if (!string.IsNullOrEmpty(idActualSignalR))
+                {
+                    try
+                    {
+                        // Enviar al cliente local (worker) usando el ConnectionId ACTUAL validado
+                        await Clients.Client(idActualSignalR).SendAsync(
+                            "PresentarFacturasEnDian",
+                            Context.ConnectionId, // para que el worker sepa a quién devolver
+                            payloadJson
+                        );
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId)
+                            .SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId)
+                        .SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId)
+                    .SendAsync("ErrorConexion", clienteId, ex.Message);
+                Console.Error.WriteLine($"Error en PresentarFacturasEnDian: {ex.Message}");
+            }
+        }
+
+        // 2) CLIENTE LOCAL (WORKER) -> CLOUD -> FRONT (PROGRESO OPCIONAL POR FACTURA)
+        public async Task RespuestaProgresoPresentacion(
+            string clienteIdDestino, // este es el Context.ConnectionId que enviaste arriba
+            string progresoJson      // ej: { "documentRef":"33112", "status":"ENVIADA", "mensaje":"..." }
+        )
+        {
+            try
+            {
+                await Clients.Client(clienteIdDestino)
+                    .SendAsync("ProgresoPresentacionFactura", clienteIdDestino, progresoJson);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error al reenviar progreso: {ex.Message}");
+            }
+        }
+
+        // 3) CLIENTE LOCAL (WORKER) -> CLOUD -> FRONT (RESUMEN FINAL)
+        public async Task RespuestaPresentarFacturasEnDian(
+            string clienteIdDestino, // el Context.ConnectionId del Angular cloud
+            string resumenJson
+        )
+        {
+            try
+            {
+                await Clients.Client(clienteIdDestino)
+                    .SendAsync("RespuestaPresentarFacturasEnDian", clienteIdDestino, resumenJson);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error al enviar resumen de presentación: {ex.Message}");
+            }
+        }
+
+
+
+        public async Task ObtenerDatosAdministrativos(string clienteId, int idDoctor, DateTime fechaInicio, DateTime fechaFin)
         {
             try
             {
@@ -1339,7 +1336,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la obtención del doctor
                 Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
             }
-                        
+
         }
 
         public async Task RespuestaObtenerCodigosEps(string clienteId, string listadoeps)
@@ -1353,7 +1350,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la respuesta del doctor
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
-            
+
         }
 
 
@@ -1397,7 +1394,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
                 // Manejo de errores en la respuesta del doctor
                 Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
             }
-            
+
         }
 
         public async Task RealizarAccionesEnCitaAgendada(string clienteId, string modelorealizaraccionesenlacitaagendada)
@@ -1446,12 +1443,20 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         {
             try
             {
-                string idActualSignalR = await ValidarIdActualSignalR(clienteId);
-                if (idActualSignalR != "")
+                // clienteId = idActualSignalR de la sede destino (worker)
+                var workerId = await ValidarIdActualSignalR(clienteId);
+
+                if (!string.IsNullOrWhiteSpace(workerId))
                 {
                     try
                     {
-                        await Clients.Client(clienteId).SendAsync("ConsultarEstadoCuenta", Context.ConnectionId, modeloDatosParaConsultarEstadoCuenta);
+                        // ✅ Reenviamos AL WORKER (no al clienteId original)
+                        // Context.ConnectionId = conexión del FRONT que pide
+                        await Clients.Client(workerId).SendAsync(
+                            "ConsultarEstadoCuenta",
+                            Context.ConnectionId,
+                            modeloDatosParaConsultarEstadoCuenta
+                        );
                     }
                     catch (Exception e)
                     {
@@ -1466,8 +1471,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             catch (Exception ex)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
-                // Manejo de errores en la obtención del doctor
-                Console.Error.WriteLine($"Error al obtener doctor: {ex.Message}");
+                Console.Error.WriteLine($"Error al consultar estado cuenta: {ex.Message}");
             }
         }
 
@@ -1475,13 +1479,607 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         {
             try
             {
-                await Clients.Client(clienteId).SendAsync("RespuestaConsultarEstadoCuenta", clienteId, respuestaConsultarEstadoCuenta);
-            }//respuesta es el objeto que se obtiene de la consulta en la bd rydent local, debe devolver una instancia del objeto TCitas y un listado del objeto TDetalleCitas
+                // ✅ clienteId aquí SIEMPRE es el ConnectionId del FRONT
+                await Clients.Client(clienteId).SendAsync(
+                    "RespuestaConsultarEstadoCuenta",
+                    clienteId,
+                    respuestaConsultarEstadoCuenta
+                );
+            }
             catch (Exception ex)
             {
-                // Manejo de errores en la respuesta del doctor
-                Console.Error.WriteLine($"Error al enviar respuesta de obtener doctor: {ex.Message}");
+                Console.Error.WriteLine($"Error al enviar respuesta consultar estado cuenta: {ex.Message}");
             }
         }
-    }
+
+        public async Task PrepararEstadoCuenta(string clienteId, string modeloPrepararEstadoCuenta)
+        {
+            try
+            {
+                var workerId = await ValidarIdActualSignalR(clienteId);
+
+                if (!string.IsNullOrWhiteSpace(workerId))
+                {
+                    try
+                    {
+                        await Clients.Client(workerId).SendAsync(
+                            "PrepararEstadoCuenta",
+                            Context.ConnectionId,
+                            modeloPrepararEstadoCuenta
+                        );
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                Console.Error.WriteLine($"Error al preparar estado cuenta: {ex.Message}");
+            }
+        }
+
+        public async Task RespuestaPrepararEstadoCuenta(string clienteId, string respuestaPrepararEstadoCuenta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync(
+                    "RespuestaPrepararEstadoCuenta",
+                    clienteId,
+                    respuestaPrepararEstadoCuenta
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error al enviar respuesta preparar estado cuenta: {ex.Message}");
+            }
+        }
+
+        public async Task CrearEstadoCuenta(string clienteId, string modeloCrearEstadoCuenta)
+        {
+            try
+            {
+                var workerId = await ValidarIdActualSignalR(clienteId);
+
+                if (!string.IsNullOrWhiteSpace(workerId))
+                {
+                    try
+                    {
+                        await Clients.Client(workerId).SendAsync(
+                            "CrearEstadoCuenta",
+                            Context.ConnectionId,
+                            modeloCrearEstadoCuenta
+                        );
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                Console.Error.WriteLine($"Error al crear estado cuenta: {ex.Message}");
+            }
+        }
+
+        public async Task RespuestaCrearEstadoCuenta(string clienteId, string respuestaCrearEstadoCuenta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync(
+                    "RespuestaCrearEstadoCuenta",
+                    clienteId,
+                    respuestaCrearEstadoCuenta
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error al enviar respuesta crear estado cuenta: {ex.Message}");
+            }
+        }
+
+		public async Task PrepararEditarEstadoCuenta(string clienteId, string modeloPrepararEditarEstadoCuenta)
+		{
+			try
+			{
+				// Valida que el destino (worker/sede) siga conectado
+				string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(idActualSignalR))
+				{
+					try
+					{
+						// Reenvía al Worker:
+						// clienteId (o idActualSignalR) = conexión del worker/sede destino
+						// Context.ConnectionId = conexión del FRONT que pidió
+						await Clients.Client(idActualSignalR).SendAsync(
+							"PrepararEditarEstadoCuenta",
+							Context.ConnectionId,
+							modeloPrepararEditarEstadoCuenta
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+				Console.Error.WriteLine($"Error al preparar editar estado cuenta: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaPrepararEditarEstadoCuenta(string clienteId, string respuestaPrepararEditarEstadoCuenta)
+		{
+			try
+			{
+				// clienteId aquí es el ConnectionId del FRONT (el que el hub le pasó al worker)
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaPrepararEditarEstadoCuenta",
+					clienteId,
+					respuestaPrepararEditarEstadoCuenta
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta preparar editar estado cuenta: {ex.Message}");
+			}
+		}
+
+
+		public async Task EditarEstadoCuenta(string clienteId, string modeloEditarEstadoCuenta)
+        {
+            try
+            {
+                var workerId = await ValidarIdActualSignalR(clienteId);
+
+                if (!string.IsNullOrWhiteSpace(workerId))
+                {
+                    try
+                    {
+                        await Clients.Client(workerId).SendAsync(
+                            "EditarEstadoCuenta",
+                            Context.ConnectionId,
+                            modeloEditarEstadoCuenta
+                        );
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                Console.Error.WriteLine($"Error al editar estado cuenta: {ex.Message}");
+            }
+        }
+
+        public async Task RespuestaEditarEstadoCuenta(string clienteId, string respuestaEditarEstadoCuenta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync(
+                    "RespuestaEditarEstadoCuenta",
+                    clienteId,
+                    respuestaEditarEstadoCuenta
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error al enviar respuesta editar estado cuenta: {ex.Message}");
+            }
+        }
+
+        public async Task BorrarEstadoCuenta(string clienteId, string modeloBorrarEstadoCuenta)
+        {
+            try
+            {
+                var workerId = await ValidarIdActualSignalR(clienteId);
+
+                if (!string.IsNullOrWhiteSpace(workerId))
+                {
+                    try
+                    {
+                        await Clients.Client(workerId).SendAsync(
+                            "BorrarEstadoCuenta",
+                            Context.ConnectionId,
+                            modeloBorrarEstadoCuenta
+                        );
+                    }
+                    catch (Exception e)
+                    {
+                        await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, e.Message);
+                    }
+                }
+                else
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("ErrorConexion", clienteId, ex.Message);
+                Console.Error.WriteLine($"Error al borrar estado cuenta: {ex.Message}");
+            }
+        }
+
+        public async Task RespuestaBorrarEstadoCuenta(string clienteId, string respuestaBorrarEstadoCuenta)
+        {
+            try
+            {
+                await Clients.Client(clienteId).SendAsync(
+                    "RespuestaBorrarEstadoCuenta",
+                    clienteId,
+                    respuestaBorrarEstadoCuenta
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error al enviar respuesta borrar estado cuenta: {ex.Message}");
+            }
+        }
+
+		// ======================================================
+		// PREPARAR INSERTAR ABONO (Front -> Hub -> Worker)
+		// ======================================================
+		public async Task PrepararInsertarAbono(string clienteId, string modeloPrepararInsertarAbono)
+		{
+			try
+			{
+				var workerId = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(workerId))
+				{
+					try
+					{
+						await Clients.Client(workerId).SendAsync(
+							"PrepararInsertarAbono",
+							Context.ConnectionId,              // <- el worker responde a este id
+							modeloPrepararInsertarAbono
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+
+				Console.Error.WriteLine($"Error al preparar insertar abono: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaPrepararInsertarAbono(string clienteId, string respuestaPrepararInsertarAbono)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaPrepararInsertarAbono",
+					clienteId,
+					respuestaPrepararInsertarAbono
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta preparar insertar abono: {ex.Message}");
+			}
+		}
+
+		// ======================================================
+		// INSERTAR ABONO (Front -> Hub -> Worker)
+		// ======================================================
+		public async Task InsertarAbono(string clienteId, string modeloInsertarAbono)
+		{
+			try
+			{
+				var workerId = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(workerId))
+				{
+					try
+					{
+						await Clients.Client(workerId).SendAsync(
+							"InsertarAbono",
+							Context.ConnectionId,              // <- el worker responde a este id
+							modeloInsertarAbono
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+
+				Console.Error.WriteLine($"Error al insertar abono: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaInsertarAbono(string clienteId, string respuestaInsertarAbono)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaInsertarAbono",
+					clienteId,
+					respuestaInsertarAbono
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta insertar abono: {ex.Message}");
+			}
+		}
+
+		// ======================================================
+		// PREPARAR INSERTAR ADICIONAL (Front -> Hub -> Worker)
+		// ======================================================
+		public async Task PrepararInsertarAdicional(string clienteId, string modeloPrepararInsertarAdicional)
+		{
+			try
+			{
+				var workerId = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(workerId))
+				{
+					try
+					{
+						await Clients.Client(workerId).SendAsync(
+							"PrepararInsertarAdicional",
+							Context.ConnectionId,              // <- el worker responde a este id
+							modeloPrepararInsertarAdicional
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+
+				Console.Error.WriteLine($"Error al preparar insertar adicional: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaPrepararInsertarAdicional(string clienteId, string respuestaPrepararInsertarAdicional)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaPrepararInsertarAdicional",
+					clienteId,
+					respuestaPrepararInsertarAdicional
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta preparar insertar adicional: {ex.Message}");
+			}
+		}
+
+		// ======================================================
+		// INSERTAR ADICIONAL (Front -> Hub -> Worker)
+		// ======================================================
+		public async Task InsertarAdicional(string clienteId, string modeloInsertarAdicional)
+		{
+			try
+			{
+				var workerId = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(workerId))
+				{
+					try
+					{
+						await Clients.Client(workerId).SendAsync(
+							"InsertarAdicional",
+							Context.ConnectionId,              // <- el worker responde a este id
+							modeloInsertarAdicional
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+
+				Console.Error.WriteLine($"Error al insertar adicional: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaInsertarAdicional(string clienteId, string respuestaInsertarAdicional)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaInsertarAdicional",
+					clienteId,
+					respuestaInsertarAdicional
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta insertar adicional: {ex.Message}");
+			}
+		}
+
+
+		// ======================================================
+		// PREPARAR BORRAR ABONO (Front -> Hub -> Worker)
+		// ======================================================
+		public async Task PrepararBorrarAbono(string clienteId, string modeloPrepararBorrarAbono)
+		{
+			try
+			{
+				var workerId = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(workerId))
+				{
+					try
+					{
+						await Clients.Client(workerId).SendAsync(
+							"PrepararBorrarAbono",
+							Context.ConnectionId,                 // <- el worker responde a este id
+							modeloPrepararBorrarAbono
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+
+				Console.Error.WriteLine($"Error al preparar borrar abono: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaPrepararBorrarAbono(string clienteId, string respuestaPrepararBorrarAbono)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaPrepararBorrarAbono",
+					clienteId,
+					respuestaPrepararBorrarAbono
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta preparar borrar abono: {ex.Message}");
+			}
+		}
+
+
+		// ======================================================
+		// BORRAR ABONO (Front -> Hub -> Worker)
+		// ======================================================
+		public async Task BorrarAbono(string clienteId, string modeloBorrarAbono)
+		{
+			try
+			{
+				var workerId = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(workerId))
+				{
+					try
+					{
+						await Clients.Client(workerId).SendAsync(
+							"BorrarAbono",
+							Context.ConnectionId,                 // <- el worker responde a este id
+							modeloBorrarAbono
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+
+				Console.Error.WriteLine($"Error al borrar abono: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaBorrarAbono(string clienteId, string respuestaBorrarAbono)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaBorrarAbono",
+					clienteId,
+					respuestaBorrarAbono
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta borrar abono: {ex.Message}");
+			}
+		}
+
+	}
 }

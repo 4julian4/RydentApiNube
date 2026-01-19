@@ -1744,6 +1744,63 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         }
 
 		// ======================================================
+		// CONSULTAR SUGERIDOS ABONO (Front -> Hub -> Worker)
+		// ======================================================
+		public async Task ConsultarSugeridosAbono(string clienteId, string modeloConsultarSugeridosAbono)
+		{
+			try
+			{
+				var workerId = await ValidarIdActualSignalR(clienteId);
+
+				if (!string.IsNullOrWhiteSpace(workerId))
+				{
+					try
+					{
+						await Clients.Client(workerId).SendAsync(
+							"ConsultarSugeridosAbono",
+							Context.ConnectionId,                 // <- el worker responde a este id
+							modeloConsultarSugeridosAbono
+						);
+					}
+					catch (Exception e)
+					{
+						await Clients.Client(Context.ConnectionId)
+							.SendAsync("ErrorConexion", clienteId, e.Message);
+					}
+				}
+				else
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+
+				Console.Error.WriteLine($"Error al consultar sugeridos abono: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaConsultarSugeridosAbono(string clienteId, string respuestaConsultarSugeridosAbono)
+		{
+			try
+			{
+				await Clients.Client(clienteId).SendAsync(
+					"RespuestaConsultarSugeridosAbono",
+					clienteId,
+					respuestaConsultarSugeridosAbono
+				);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar respuesta consultar sugeridos abono: {ex.Message}");
+			}
+		}
+
+
+		// ======================================================
 		// PREPARAR INSERTAR ABONO (Front -> Hub -> Worker)
 		// ======================================================
 		public async Task PrepararInsertarAbono(string clienteId, string modeloPrepararInsertarAbono)

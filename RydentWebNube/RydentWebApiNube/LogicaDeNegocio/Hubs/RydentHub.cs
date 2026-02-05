@@ -1060,7 +1060,21 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
         }
 
-        public async Task GenerarRips(string clienteId, int identificador, string objGenerarRips)
+		public async Task ProgresoRips(string clienteId, string progresoJson)
+		{
+			try
+			{
+				// clienteId aquí ES el ConnectionId del navegador (Angular)
+				await Clients.Client(clienteId).SendAsync("ProgresoRips", clienteId, progresoJson);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar progreso: {ex.Message}");
+			}
+		}
+
+
+		public async Task GenerarRips(string clienteId, int identificador, string objGenerarRips)
         {
             try
             {
@@ -1265,9 +1279,53 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             }
         }
 
+		public async Task DescargarJsonFacturaPendiente(string clienteId, string payloadJson)
+		{
+			try
+			{
+				string idActualSignalR = await ValidarIdActualSignalR(clienteId);
+
+				if (string.IsNullOrEmpty(idActualSignalR))
+				{
+					await Clients.Client(Context.ConnectionId)
+						.SendAsync("ErrorConexion", clienteId, "no se encontro conexion activa");
+					return;
+				}
+
+				await Clients.Client(idActualSignalR).SendAsync(
+					"DescargarJsonFacturaPendiente",
+					Context.ConnectionId, // destino (front)
+					payloadJson
+				);
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", clienteId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaDescargarJsonFacturaPendiente(
+	        string clienteIdDestino,
+	        string jsonFactura
+        )
+		{
+			try
+			{
+				await Clients.Client(clienteIdDestino)
+					.SendAsync("RespuestaDescargarJsonFacturaPendiente", clienteIdDestino, jsonFactura);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar JSON: {ex.Message}");
+			}
+		}
 
 
-        public async Task ObtenerDatosAdministrativos(string clienteId, int idDoctor, DateTime fechaInicio, DateTime fechaFin)
+
+
+
+		public async Task ObtenerDatosAdministrativos(string clienteId, int idDoctor, DateTime fechaInicio, DateTime fechaFin)
         {
             try
             {

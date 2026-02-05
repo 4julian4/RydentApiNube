@@ -34,8 +34,9 @@ builder.Services.AddCors(options =>
     {
         policyBuilder     
             .WithOrigins(
-                         "http://rydentweb-001-site2.jtempurl.com", "https://rydentweb-001-site2.jtempurl.com",
-                         "http://rydentweb-001-site1.jtempurl.com", "https://rydentweb-001-site1.jtempurl.com",
+						 "http://rydentweb-001-site3.jtempurl.com", "https://rydentweb-001-site3.jtempurl.com",
+						 "http://rydentweb-001-site2.jtempurl.com", "https://rydentweb-001-site2.jtempurl.com",
+						 "http://rydentweb-001-site1.jtempurl.com", "https://rydentweb-001-site1.jtempurl.com",
                          "http://localhost:4200", "https://localhost:4200", "https://rydentclient.azurewebsites.net"
                         ) // Especificar dominios permitidos
             .AllowAnyMethod()   // Permitir cualquier método (GET, POST, etc.)

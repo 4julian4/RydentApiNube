@@ -40,8 +40,15 @@ namespace RydentWebApiNube.Controllers
         {
             return Ok(await _sedesconectadasServicios.ConsultarSedesConectadasActivasPorCliente(idCliente));
         }
-       
-        [HttpPut]
+
+        [HttpGet]
+		[Route("ActivasConCliente")]
+		public async Task<IActionResult> ActivasConCliente([FromQuery] int minutos = 10)
+		{
+			return Ok(await _sedesconectadasServicios.ConsultarSedesActivasConCliente(minutos));
+		}
+
+		[HttpPut]
         [Route("{idSedeConectada}")]
         public async Task<IActionResult> Put(int idSedeConectada, [FromBody] SedesConectadas obj)
         {

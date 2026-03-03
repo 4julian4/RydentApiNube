@@ -2,260 +2,312 @@
 using Microsoft.IdentityModel.Tokens;
 using RydentWebApiNube.LogicaDeNegocio.Entidades;
 using RydentWebApiNube.LogicaDeNegocio.Servicios;
+using RydentWebApiNube.Models.Google;
+using RydentWebApiNube.Models.MSN;
 using System.Dynamic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Text;
-using RydentWebApiNube.Models.MSN;
-using RydentWebApiNube.Models.Google;
-using System.Net.Http;
+using System.Text.Json;
 
 namespace RydentWebApiNube.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class AuthController : ControllerBase
-    {
-        private readonly IConfiguration configuration;
-        private readonly IUsuariosServicios iUsuariosServicios;
-        private static readonly HttpClient httpClient = new HttpClient();
-        private readonly string AuthCodeEndPoint;
-        private readonly string TokenEndPoint;
-        private readonly string ClientId;
-        private readonly string Secret;
-        private readonly string Scope;
-        private readonly string RedirectURI;
-        private readonly string API_EndPoint;
+	[Route("api/[controller]")]
+	[ApiController]
+	public class AuthController : ControllerBase
+	{
+		private readonly IConfiguration _configuration;
+		private readonly IUsuariosServicios _usuarios;
 
+		// ✅ Puedes dejar estático si NO tocas DefaultRequestHeaders (como lo hacemos aquí)
+		private static readonly HttpClient httpClient = new HttpClient();
 
-        private readonly string GoogleTokenEndPoint;
-        private readonly string GoogleClientId;
-        private readonly string GoogleSecret;
-        private readonly string GoogleRedirectURI;
-        private readonly string GoogleAPI_EndPoint;
-        public AuthController(
-            IConfiguration configuration,
-            IUsuariosServicios iUsuariosServicios
-            )
-        {
-            this.configuration = configuration;
-            this.iUsuariosServicios = iUsuariosServicios;
-            this.AuthCodeEndPoint = configuration["OAuth:AuthCodeEndPoint"] ?? "";
-            this.TokenEndPoint = configuration["OAuth:TokenEndPoint"] ?? "";
-            this.ClientId = configuration["OAUTH2_AZURE_CLIENTID"] ?? "";
-            this.Secret = configuration["OAUTH2_AZURE_SECRET"] ?? "";
-            this.Scope = configuration["OAuth:Scope"] ?? "";
-            this.RedirectURI = configuration["OAuth:RedirectURI"] ?? "";
-            this.API_EndPoint = configuration["OAuth:API_EndPoint"] ?? "";
+		// MSN / Azure OAuth
+		private readonly string AuthCodeEndPoint;
+		private readonly string TokenEndPoint;
+		private readonly string ClientId;
+		private readonly string Secret;
+		private readonly string Scope;
+		private readonly string RedirectURI;
+		private readonly string API_EndPoint;
 
+		// Google OAuth
+		private readonly string GoogleTokenEndPoint;
+		private readonly string GoogleClientId;
+		private readonly string GoogleSecret;
+		private readonly string GoogleRedirectURI;
+		private readonly string GoogleAPI_EndPoint;
 
-            this.GoogleTokenEndPoint = configuration["OAuthGoogle:TokenEndPoint"] ?? "";
-            this.GoogleClientId = configuration["OAUTH2_GOOGLE_CLIENTID"] ?? "";
-            this.GoogleSecret = configuration["OAUTH2_GOOGLE_SECRET"] ?? "";
-            this.GoogleRedirectURI = configuration["OAuthGoogle:RedirectURI"] ?? "";
-            this.GoogleAPI_EndPoint = configuration["OAuthGoogle:API_EndPoint"] ?? "";
-        }
-        [HttpGet("getcode")]
-        public IActionResult GetCode()
-        {
-            string URL = $"{this.AuthCodeEndPoint}?" +
-                $"response_type=code&" +
-                $"client_id={ClientId}&" +
-                $"Redirect_uri={RedirectURI}&" +
-                $"scope={Scope}&" +
-                $"state=1234567890";
-            return Redirect(URL);
-        }
+		public AuthController(IConfiguration configuration, IUsuariosServicios iUsuariosServicios)
+		{
+			_configuration = configuration;
+			_usuarios = iUsuariosServicios;
 
-        [HttpPost("")]
-        public async Task<IActionResult> Autenticar([FromBody] loginRequest modelo)
-        {
-            string grant_type = "authorization_code";
+			// Azure / MSN
+			AuthCodeEndPoint = configuration["OAuth:AuthCodeEndPoint"] ?? "";
+			TokenEndPoint = configuration["OAuth:TokenEndPoint"] ?? "";
+			ClientId = configuration["OAUTH2_AZURE_CLIENTID"] ?? "";
+			Secret = configuration["OAUTH2_AZURE_SECRET"] ?? "";
+			Scope = configuration["OAuth:Scope"] ?? "";
+			RedirectURI = configuration["OAuth:RedirectURI"] ?? "";
+			API_EndPoint = configuration["OAuth:API_EndPoint"] ?? "";
 
-            //Dictionary<string, string> BodyData = new Dictionary<string, string>()
-            var BodyData = new Dictionary<string, string>
-            {
-                { "grant_type", grant_type },
-                { "code", modelo.code },
-                { "Redirect_uri", this.RedirectURI },
-                { "client_id", this.ClientId },
-                { "client_secret", this.Secret },
-                { "scope", this.Scope }
-            };
-            //HttpClient client = new HttpClient();
-            var body = new FormUrlEncodedContent(BodyData);
-            var response = await httpClient.PostAsync(TokenEndPoint, body).ConfigureAwait(false);
-            var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+			// Google
+			GoogleTokenEndPoint = configuration["OAuthGoogle:TokenEndPoint"] ?? "";
+			GoogleClientId = configuration["OAUTH2_GOOGLE_CLIENTID"] ?? "";
+			GoogleSecret = configuration["OAUTH2_GOOGLE_SECRET"] ?? "";
+			GoogleRedirectURI = configuration["OAuthGoogle:RedirectURI"] ?? "";
+			GoogleAPI_EndPoint = configuration["OAuthGoogle:API_EndPoint"] ?? "";
+		}
 
-            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
-            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
+		// ✅ DTOs claros (mejor que Expando)
+		public record LoginRequest(string code, string state);
+		public record LoginResponse(bool autenticado, string respuesta);
 
-            var accessToken = jsonContent.GetProperty("access_token").GetString();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+		// ✅ Redirección a Azure/MSN (si la sigues usando)
+		[HttpGet("getcode")]
+		public IActionResult GetCode()
+		{
+			// OAuth estándar: redirect_uri en minúscula
+			string url =
+				$"{AuthCodeEndPoint}?" +
+				$"response_type=code&" +
+				$"client_id={ClientId}&" +
+				$"redirect_uri={Uri.EscapeDataString(RedirectURI)}&" +
+				$"scope={Uri.EscapeDataString(Scope)}&" +
+				$"state=1234567890";
 
-            var response1 = await httpClient.GetAsync(API_EndPoint).ConfigureAwait(false);
-            dynamic ojJSON = new ExpandoObject();
-            ojJSON.respuesta = "";
-            ojJSON.autenticado = false;
+			return Redirect(url);
+		}
 
-            if (response1.IsSuccessStatusCode)
-            {
-                var usrMSNAzure = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var jsUsuarioMSN = JsonSerializer.Deserialize<UsuarioMSN>(usrMSNAzure);
+		// ✅ POST api/auth  (Azure/MSN)
+		[HttpPost("")]
+		public async Task<IActionResult> Autenticar([FromBody] LoginRequest modelo)
+		{
+			var resp = new LoginResponse(false, "");
 
-                status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
-                if (!string.IsNullOrEmpty(jsUsuarioMSN?.id))
-                {
-                    var usuario = await iUsuariosServicios.ConsultarPorCodigoExterno(jsUsuarioMSN.id).ConfigureAwait(false);
-                    var respuesta = generateJwtToken(usuario);
-                    ojJSON.respuesta = respuesta;
-                    ojJSON.autenticado = true;
-                    return Ok(ojJSON);
-                }
-                else return Ok(ojJSON);
-            }
-            else
-            {
-                return Ok(ojJSON);
-            }
-        }
-        [HttpGet("prueba/{id}")]
-        public IActionResult Prueba(string id)
-        {
-            string grant_type = "authorization_code";
-            string stringURI = new Uri(this.GoogleRedirectURI).ToString();
-            var BodyData = new Dictionary<string, string>
-            {
-                { "code", "" },
-                { "client_id", this.GoogleClientId },
-                { "client_secret", this.GoogleSecret },
-                { "redirect_uri", stringURI },
-                { "grant_type", grant_type }
-            };
-            return Ok(id == "123" ? BodyData : "");
-        }
+			try
+			{
+				if (modelo == null || string.IsNullOrWhiteSpace(modelo.code))
+					return Ok(resp);
 
-        [HttpPost("authgoogle")]
-        public async Task<IActionResult> AutenticarGoogle([FromBody] loginRequest modelo)
-        {
-            string grant_type = "authorization_code";
-            string stringURI = new Uri(this.GoogleRedirectURI).ToString();
-            var BodyData = new Dictionary<string, string>
-            {
-                { "code", modelo.code },
-                { "client_id", this.GoogleClientId },
-                { "client_secret", this.GoogleSecret },
-                { "redirect_uri", stringURI },
-                { "grant_type", grant_type }
-            };
+				// 1) Cambiar code por access_token
+				var tokenBody = new Dictionary<string, string>
+				{
+					{ "grant_type", "authorization_code" },
+					{ "code", modelo.code },
+					{ "redirect_uri", RedirectURI },
+					{ "client_id", ClientId },
+					{ "client_secret", Secret },
+					{ "scope", Scope }
+				};
 
-            var body = new FormUrlEncodedContent(BodyData);
-            var response = await httpClient.PostAsync(this.GoogleTokenEndPoint, body).ConfigureAwait(false);
-            var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+				var tokenHttpResp = await httpClient.PostAsync(
+					TokenEndPoint,
+					new FormUrlEncodedContent(tokenBody)
+				).ConfigureAwait(false);
 
-            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
-            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
+				if (!tokenHttpResp.IsSuccessStatusCode)
+					return Ok(resp);
 
-            var accessToken = jsonContent.GetProperty("access_token").GetString();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            string DatosUsuarioGoogle = this.GoogleAPI_EndPoint + accessToken;
+				var tokenJson = await tokenHttpResp.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+				if (!tokenJson.TryGetProperty("access_token", out var atProp))
+					return Ok(resp);
 
-            var response1 = await httpClient.GetAsync(DatosUsuarioGoogle).ConfigureAwait(false);
-            dynamic ojJSON = new ExpandoObject();
-            ojJSON.respuesta = "";
-            ojJSON.autenticado = false;
+				var accessToken = atProp.GetString();
+				if (string.IsNullOrWhiteSpace(accessToken))
+					return Ok(resp);
 
-            if (response1.IsSuccessStatusCode)
-            {
-                var s = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var jsUsuarioGoogle = JsonSerializer.Deserialize<UsuarioGoogle>(s);
+				// 2) Pedir datos del usuario (SIN tocar DefaultRequestHeaders)
+				var meReq = new HttpRequestMessage(HttpMethod.Get, API_EndPoint);
+				meReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-                status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
-                if (!string.IsNullOrEmpty(jsUsuarioGoogle?.email))
-                {
-                    var usuario = await iUsuariosServicios.ConsultarPorCorreo(jsUsuarioGoogle.email).ConfigureAwait(false);
-                    var respuesta = generateJwtToken(usuario);
-                    ojJSON.respuesta = respuesta;
-                    ojJSON.autenticado = true;
-                    return Ok(ojJSON);
-                }
-                else return Ok(ojJSON);
-            }
-            else
-            {
-                return Ok(ojJSON);
-            }
-        }
+				var meHttpResp = await httpClient.SendAsync(meReq).ConfigureAwait(false);
+				if (!meHttpResp.IsSuccessStatusCode)
+					return Ok(resp);
 
-        private string generateJwtToken(Usuarios user)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(configuration["JWT_SECRET"] ?? "");
-            var lstClaims = new List<Claim>
-            {
-                new Claim("id", user.idUsuario.ToString()),
-                new Claim("idCliente", user.idCliente.ToString()),
-                new Claim("correo", user.correoUsuario.ToString())
-            };
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(lstClaims),
-                Expires = DateTime.UtcNow.AddDays(7),
-                Issuer = configuration["Jwt:Issuer"] ?? "",
-                Audience = configuration["JWT_SECRET"] ?? "",
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
+				var meRaw = await meHttpResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+				var me = JsonSerializer.Deserialize<UsuarioMSN>(meRaw);
 
-        [HttpGet("login-callback")]
-        public async Task<IActionResult> GetCallback([FromQuery] string code, string state)
-        {
-            string grant_type = "authorization_code";
+				// Mantengo tu lógica: buscar por id externo
+				if (string.IsNullOrWhiteSpace(me?.id))
+					return Ok(resp);
 
-            var BodyData = new Dictionary<string, string>
-            {
-                { "grant_type", grant_type },
-                { "code", code },
-                { "Redirect_uri", this.RedirectURI },
-                { "client_id", this.ClientId },
-                { "client_secret", this.Secret },
-                { "scope", this.Scope }
-            };
+				var usuario = await _usuarios.ConsultarPorCodigoExterno(me.id).ConfigureAwait(false);
+				if (usuario == null || usuario.idUsuario <= 0)
+					return Ok(resp);
 
-            var body = new FormUrlEncodedContent(BodyData);
-            var response = await httpClient.PostAsync(TokenEndPoint, body).ConfigureAwait(false);
-            var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+				var jwt = GenerateJwtToken(usuario);
+				return Ok(new LoginResponse(true, jwt));
+			}
+			catch
+			{
+				return Ok(resp);
+			}
+		}
 
-            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
-            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
+		// ✅ POST api/auth/authgoogle (Google)
+		/*[HttpPost("authgoogle")]
+		public async Task<IActionResult> AutenticarGoogle([FromBody] LoginRequest modelo)
+		{
+			var resp = new LoginResponse(false, "");
 
-            var accessToken = jsonContent.GetProperty("access_token").GetString();
-            var jwtToken = new JwtSecurityToken(accessToken);
-            var ss = jwtToken.Subject;
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+			try
+			{
+				if (modelo == null || string.IsNullOrWhiteSpace(modelo.code))
+					return Ok(resp);
 
-            var response1 = await httpClient.GetAsync(API_EndPoint).ConfigureAwait(false);
-            if (response1.IsSuccessStatusCode)
-            {
-                var resultado = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var jsonRes = JsonSerializer.Deserialize<JsonElement>(resultado, new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                });
+				string redirectUri = new Uri(GoogleRedirectURI).ToString();
 
-                status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
-                return Ok($"{status + Environment.NewLine}{jsonRes + Environment.NewLine}{response1.IsSuccessStatusCode}");
-            }
-            else
-            {
-                return Ok($"{status + Environment.NewLine}{prettyJson + Environment.NewLine}{response.IsSuccessStatusCode}");
-            }
-        }
-    }
+				var tokenBody = new Dictionary<string, string>
+				{
+					{ "code", modelo.code },
+					{ "client_id", GoogleClientId },
+					{ "client_secret", GoogleSecret },
+					{ "redirect_uri", redirectUri },
+					{ "grant_type", "authorization_code" }
+				};
+
+				var tokenHttpResp = await httpClient.PostAsync(
+					GoogleTokenEndPoint,
+					new FormUrlEncodedContent(tokenBody)
+				).ConfigureAwait(false);
+
+				if (!tokenHttpResp.IsSuccessStatusCode)
+					return Ok(resp);
+
+				var tokenJson = await tokenHttpResp.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
+				if (!tokenJson.TryGetProperty("access_token", out var atProp))
+					return Ok(resp);
+
+				var accessToken = atProp.GetString();
+				if (string.IsNullOrWhiteSpace(accessToken))
+					return Ok(resp);
+
+				// Google userinfo: algunos endpoints son tipo "...?access_token="
+				// Si tu GoogleAPI_EndPoint ya trae "?access_token=", esto funciona.
+				var userInfoUrl = GoogleAPI_EndPoint + accessToken;
+
+				var meReq = new HttpRequestMessage(HttpMethod.Get, userInfoUrl);
+				meReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+				var meHttpResp = await httpClient.SendAsync(meReq).ConfigureAwait(false);
+				if (!meHttpResp.IsSuccessStatusCode)
+					return Ok(resp);
+
+				var meRaw = await meHttpResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+				var me = JsonSerializer.Deserialize<UsuarioGoogle>(meRaw);
+
+				if (string.IsNullOrWhiteSpace(me?.email))
+					return Ok(resp);
+
+				var usuario = await _usuarios.ConsultarPorCorreo(me.email).ConfigureAwait(false);
+				if (usuario == null || usuario.idUsuario <= 0)
+					return Ok(resp);
+
+				var jwt = GenerateJwtToken(usuario);
+				return Ok(new LoginResponse(true, jwt));
+			}
+			catch
+			{
+				return Ok(resp);
+			}
+		}*/
+
+		[HttpPost("authgoogle")]
+		public async Task<IActionResult> AutenticarGoogle([FromBody] LoginRequest modelo)
+		{
+			var resp = new LoginResponse(false, "");
+
+			try
+			{
+				if (modelo == null || string.IsNullOrWhiteSpace(modelo.code))
+					return Ok(resp);
+
+				var tokenBody = new Dictionary<string, string>
+				{
+				  { "code", modelo.code },
+				  { "client_id", GoogleClientId },
+				  { "client_secret", GoogleSecret },
+				  { "redirect_uri", GoogleRedirectURI }, // ✅ TAL CUAL
+				  { "grant_type", "authorization_code" }
+				};
+
+				var tokenHttpResp = await httpClient.PostAsync(
+				  GoogleTokenEndPoint,
+				  new FormUrlEncodedContent(tokenBody)
+				).ConfigureAwait(false);
+
+				var tokenRaw = await tokenHttpResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+				if (!tokenHttpResp.IsSuccessStatusCode)
+				{
+					Console.WriteLine("GOOGLE TOKEN ERROR: " + tokenRaw);
+					return Ok(resp);
+				}
+
+				var tokenJson = JsonSerializer.Deserialize<JsonElement>(tokenRaw);
+				if (!tokenJson.TryGetProperty("access_token", out var atProp))
+					return Ok(resp);
+
+				var accessToken = atProp.GetString();
+				if (string.IsNullOrWhiteSpace(accessToken))
+					return Ok(resp);
+
+				// ✅ Userinfo sin concatenar access_token
+				var meReq = new HttpRequestMessage(HttpMethod.Get, GoogleAPI_EndPoint);
+				meReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+				var meHttpResp = await httpClient.SendAsync(meReq).ConfigureAwait(false);
+				var meRaw = await meHttpResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+				if (!meHttpResp.IsSuccessStatusCode)
+				{
+					Console.WriteLine("GOOGLE USERINFO ERROR: " + meRaw);
+					return Ok(resp);
+				}
+
+				var me = JsonSerializer.Deserialize<UsuarioGoogle>(meRaw);
+				if (string.IsNullOrWhiteSpace(me?.email))
+					return Ok(resp);
+
+				var usuario = await _usuarios.ConsultarPorCorreo(me.email).ConfigureAwait(false);
+				if (usuario == null || usuario.idUsuario <= 0)
+					return Ok(resp);
+
+				var jwt = GenerateJwtToken(usuario);
+				return Ok(new LoginResponse(true, jwt));
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("AUTH GOOGLE EXCEPTION: " + ex);
+				return Ok(resp);
+			}
+		}
+
+		private string GenerateJwtToken(Usuarios user)
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var key = Encoding.ASCII.GetBytes(_configuration["JWT_SECRET"] ?? "");
+
+			var claims = new List<Claim>
+			{
+				new Claim("id", user.idUsuario.ToString()),
+				new Claim("idCliente", user.idCliente.ToString()),
+				new Claim("correo", user.correoUsuario?.ToString() ?? "")
+			};
+
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Subject = new ClaimsIdentity(claims),
+				Expires = DateTime.UtcNow.AddDays(7),
+				Issuer = _configuration["Jwt:Issuer"] ?? "",
+				Audience = _configuration["JWT_SECRET"] ?? "",
+				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+			};
+
+			var token = tokenHandler.CreateToken(tokenDescriptor);
+			return tokenHandler.WriteToken(token);
+		}
+	}
 }
-

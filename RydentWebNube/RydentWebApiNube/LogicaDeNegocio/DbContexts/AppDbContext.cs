@@ -26,7 +26,12 @@ namespace RydentWebApiNube.LogicaDeNegocio.DbContexts
         public DbSet<Sedes> TSedes { get; set; }
         public DbSet<SedesConectadas> TSedesConectadas { get; set; }
         public DbSet<Usuarios> TUsuarios { get; set; }
-        //public DbSet<Citas> TCitas { get; set; }
-        //public DbSet<DetalleCitas> TDetalleCitas { get; set; }
-    }
+		public DbSet<CodigosDepartamento> TCODIGOS_DEPARTAMENTO { get; set; }
+		public DbSet<CodigosCiudad> TCODIGOS_CIUDAD { get; set; }
+		public DbSet<CodigosEps> TCODIGOS_EPS { get; set; }
+		public DbSet<CodigosConsultas> TCODIGOS_CONSLUTAS { get; set; }
+		public DbSet<CodigosProcedimientos> TCODIGOS_PROCEDIMIENTOS { get; set; }
+		//public DbSet<Citas> TCitas { get; set; }
+		//public DbSet<DetalleCitas> TDetalleCitas { get; set; }
+	}
 }

@@ -1,6 +1,8 @@
-using RydentWebApiNube.LogicaDeNegocio.Hubs;
-using RydentWebApiNube.LogicaDeNegocio.Servicios;
 using Microsoft.AspNetCore.ResponseCompression;
+using RydentWebApiNube.LogicaDeNegocio.DbContexts;
+using RydentWebApiNube.LogicaDeNegocio.Hubs;
+using RydentWebApiNube.LogicaDeNegocio.Services;
+using RydentWebApiNube.LogicaDeNegocio.Servicios;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,17 +10,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 // Registrar servicios
+builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddScoped<IClientesServicios, ClientesServicios>();
 builder.Services.AddScoped<IHistorialesServicios, HistorialesServicios>();
 builder.Services.AddScoped<ISedesConectadasServicios, SedesConectadasServicios>();
 builder.Services.AddScoped<ISedesServicios, SedesServicios>();
 builder.Services.AddScoped<IUsuariosServicios, UsuariosServicios>();
 builder.Services.AddScoped<IHistorialDePagosServicios, HistorialDePagosServicios>();
+builder.Services.AddScoped<ICatalogosServicios, CatalogosServicios>();
+builder.Services.AddSingleton<WorkerPresenceRegistry>();
+builder.Services.AddHostedService<WorkerPresenceCleanupService>();
+builder.Services.AddHostedService<SedesConectadasWeeklyCleanupService>();
+
 
 // Agregar controladores y documentación Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 
 // Configuración de SignalR
 builder.Services.AddSignalR(o =>

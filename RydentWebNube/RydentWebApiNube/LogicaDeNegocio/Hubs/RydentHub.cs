@@ -1244,15 +1244,11 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 		{
 			try
 			{
-				// ✅ ReturnId real del browser que invocó
 				var returnId = Context.ConnectionId;
-
-				// ✅ Resolver worker activo por sede
 				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
 
 				if (!string.IsNullOrWhiteSpace(workerConnId))
 				{
-					// ✅ Enviamos al worker: (returnId, datosRips)
 					await Clients.Client(workerConnId)
 						.SendAsync("GuardarDatosRips", returnId, datosRips);
 				}
@@ -1271,15 +1267,14 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 			}
 		}
 
-		public async Task RespuestaGuardarDatosRips(string clienteId, bool respuesta)
+		public async Task RespuestaGuardarDatosRips(string clienteId, bool respuesta, string? mensaje)
 		{
-			// clienteId = RETURN-ID (connectionId del browser que pidió)
 			var returnId = clienteId;
 
 			try
 			{
 				await Clients.Client(returnId)
-					.SendAsync("RespuestaGuardarDatosRips", returnId, respuesta);
+					.SendAsync("RespuestaGuardarDatosRips", returnId, respuesta, mensaje);
 			}
 			catch (Exception ex)
 			{
@@ -1287,6 +1282,134 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 			}
 		}
 
+		public async Task ConsultarRipsExistentes(long sedeId, string payloadJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarRipsExistentes", returnId, payloadJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+
+				Console.Error.WriteLine($"Error ConsultarRipsExistentes: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaConsultarRipsExistentes(string clienteId, string payload)
+		{
+			var returnId = clienteId;
+
+			try
+			{
+				await Clients.Client(returnId)
+					.SendAsync("RespuestaConsultarRipsExistentes", returnId, payload);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error RespuestaConsultarRipsExistentes: {ex.Message}");
+			}
+		}
+
+		public async Task EliminarRipsPorLlave(long sedeId, string payloadJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("EliminarRipsPorLlave", returnId, payloadJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+
+				Console.Error.WriteLine($"Error EliminarRipsPorLlave: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaEliminarRipsPorLlave(string clienteId, bool ok, string mensaje)
+		{
+			var returnId = clienteId;
+
+			try
+			{
+				await Clients.Client(returnId)
+					.SendAsync("RespuestaEliminarRipsPorLlave", returnId, ok, mensaje);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error RespuestaEliminarRipsPorLlave: {ex.Message}");
+			}
+		}
+
+		public async Task ConsultarRipsDetallePorLlave(long sedeId, string payloadJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarRipsDetallePorLlave", returnId, payloadJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+
+				Console.Error.WriteLine($"Error ConsultarRipsDetallePorLlave: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaConsultarRipsDetallePorLlave(string clienteId, string payload)
+		{
+			var returnId = clienteId;
+
+			try
+			{
+				await Clients.Client(returnId)
+					.SendAsync("RespuestaConsultarRipsDetallePorLlave", returnId, payload);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error RespuestaConsultarRipsDetallePorLlave: {ex.Message}");
+			}
+		}
 
 		// =========================================================
 
@@ -1421,7 +1544,238 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 				Console.Error.WriteLine($"Error al enviar RespuestaGenerarRips: {ex.Message}");
 			}
 		}
+		//-----------------------------------Interoperabilidad------------------------------------//
 
+		public async Task ConsultarRdaControl(long sedeId, string filtroJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarRdaControl", returnId, filtroJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaConsultarRdaControl(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId).SendAsync("RespuestaConsultarRdaControl", clienteId, payload);
+		}
+
+		public async Task ReenviarRda(long sedeId, int idRda)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ReenviarRda", returnId, idRda);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaReenviarRda(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId).SendAsync("RespuestaReenviarRda", clienteId, payload);
+		}
+
+		public async Task RegenerarRda(long sedeId, int idRda)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("RegenerarRda", returnId, idRda);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaRegenerarRda(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId).SendAsync("RespuestaRegenerarRda", clienteId, payload);
+		}
+
+		public async Task ConsultarDetalleRda(long sedeId, int idRda)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarDetalleRda", returnId, idRda);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaConsultarDetalleRda(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaConsultarDetalleRda", clienteId, payload);
+		}
+
+		public async Task ConsultarHistorialRda(long sedeId, int idRda)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarHistorialRda", returnId, idRda);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaConsultarHistorialRda(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaConsultarHistorialRda", clienteId, payload);
+		}
+
+		public async Task ReenviarRdaLote(long sedeId, string idsJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ReenviarRdaLote", returnId, idsJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaReenviarRdaLote(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaReenviarRdaLote", clienteId, payload);
+		}
+
+		public async Task RegenerarRdaLote(long sedeId, string idsJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("RegenerarRdaLote", returnId, idsJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaRegenerarRdaLote(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaRegenerarRdaLote", clienteId, payload);
+		}
+
+		public async Task ProgresoRda(string clienteId, string progresoJson)
+		{
+			try
+			{
+				var returnId = clienteId;
+
+				await Clients.Client(returnId)
+					.SendAsync("ProgresoRda", returnId, progresoJson);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar ProgresoRda: {ex.Message}");
+			}
+		}
+
+		//------------------------------------------------------------------------------------------------------------//
 
 		// =========================================================
 		// OBTENER FACTURAS PENDIENTES

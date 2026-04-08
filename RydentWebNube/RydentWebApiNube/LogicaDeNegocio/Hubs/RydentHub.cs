@@ -1775,6 +1775,130 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 			}
 		}
 
+		public async Task ConsultarPacienteInteroperabilidadExacto(long sedeId, string filtroJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarPacienteInteroperabilidadExacto", returnId, filtroJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaConsultarPacienteInteroperabilidadExacto(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaConsultarPacienteInteroperabilidadExacto", clienteId, payload);
+		}
+
+		public async Task ConsultarPacienteInteroperabilidadSimilar(long sedeId, string filtroJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarPacienteInteroperabilidadSimilar", returnId, filtroJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaConsultarPacienteInteroperabilidadSimilar(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaConsultarPacienteInteroperabilidadSimilar", clienteId, payload);
+		}
+
+		public async Task ConsultarRdaPacienteInteroperabilidad(long sedeId, string filtroJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarRdaPacienteInteroperabilidad", returnId, filtroJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaConsultarRdaPacienteInteroperabilidad(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaConsultarRdaPacienteInteroperabilidad", clienteId, payload);
+		}
+
+		public async Task ConsultarEncuentrosPacienteInteroperabilidad(long sedeId, string filtroJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ConsultarEncuentrosPacienteInteroperabilidad", returnId, filtroJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaConsultarEncuentrosPacienteInteroperabilidad(string clienteId, string payload)
+		{
+			await Clients.Client(clienteId)
+				.SendAsync("RespuestaConsultarEncuentrosPacienteInteroperabilidad", clienteId, payload);
+		}
+
 		//------------------------------------------------------------------------------------------------------------//
 
 		// =========================================================

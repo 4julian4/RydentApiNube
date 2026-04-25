@@ -19,6 +19,7 @@ namespace RydentWebApiNube.Controllers
 		private readonly IConfiguration _configuration;
 		private readonly IUsuariosServicios _usuarios;
 		private readonly IClientesServicios _clientes;
+		private readonly ISesionesUsuarioServicios _sesionesUsuarioServicios;
 
 		// ✅ Puedes dejar estático si NO tocas DefaultRequestHeaders
 		private static readonly HttpClient httpClient = new HttpClient();
@@ -42,7 +43,8 @@ namespace RydentWebApiNube.Controllers
 		public AuthController(
 			IConfiguration configuration,
 			IUsuariosServicios iUsuariosServicios,
-			IClientesServicios clientesServicios)
+			IClientesServicios clientesServicios,
+			ISesionesUsuarioServicios sesionesUsuarioServicios)
 		{
 			_configuration = configuration;
 			_usuarios = iUsuariosServicios;
@@ -63,10 +65,11 @@ namespace RydentWebApiNube.Controllers
 			GoogleSecret = configuration["OAUTH2_GOOGLE_SECRET"] ?? "";
 			GoogleRedirectURI = configuration["OAuthGoogle:RedirectURI"] ?? "";
 			GoogleAPI_EndPoint = configuration["OAuthGoogle:API_EndPoint"] ?? "";
+			_sesionesUsuarioServicios = sesionesUsuarioServicios;
 		}
 
 		// ✅ DTOs
-		public record LoginRequest(string code, string state);
+		public record LoginRequest(string code, string state, bool forzarCerrarAnterior = false);
 
 		public record LoginResponse(
 			bool autenticado,
@@ -74,7 +77,9 @@ namespace RydentWebApiNube.Controllers
 			string mensaje,
 			bool mostrarRecordatorio,
 			DateTime? activoHasta,
-			int? diasParaVencer
+			int? diasParaVencer,
+			bool requiereConfirmacion = false,
+			string? loginConfirmToken = null
 		);
 
 		private record ValidacionAccesoResult(
@@ -176,7 +181,46 @@ namespace RydentWebApiNube.Controllers
 					));
 				}
 
-				var jwt = GenerateJwtToken(usuario);
+				var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+				var userAgent = Request.Headers["User-Agent"].ToString();
+
+				var sesion = await _sesionesUsuarioServicios.PrepararLoginAsync(
+					usuario,
+					modelo.forzarCerrarAnterior,
+					ip,
+					userAgent
+				);
+
+				if (sesion.RequiereConfirmacion)
+				{
+					var confirmToken = GenerateLoginConfirmToken(usuario);
+
+					return Ok(new LoginResponse(
+						false,
+						"",
+						sesion.Mensaje,
+						false,
+						validacion.ActivoHasta,
+						validacion.DiasParaVencer,
+						true,
+						confirmToken
+					));
+				}
+
+				if (!sesion.PuedeEntrar)
+				{
+					return Ok(new LoginResponse(
+						false,
+						"",
+						sesion.Mensaje,
+						false,
+						validacion.ActivoHasta,
+						validacion.DiasParaVencer,
+						false
+					));
+				}
+
+				var jwt = GenerateJwtToken(usuario, sesion.SessionId);
 
 				return Ok(new LoginResponse(
 					true,
@@ -193,6 +237,58 @@ namespace RydentWebApiNube.Controllers
 				return Ok(resp);
 			}
 		}
+
+		[HttpPost("forzar-login")]
+		public async Task<IActionResult> ForzarLogin([FromBody] ForzarLoginRequest modelo)
+		{
+			try
+			{
+				if (modelo == null || string.IsNullOrWhiteSpace(modelo.loginConfirmToken))
+				{
+					return Ok(new LoginResponse(false, "", "Confirmación inválida.", false, null, null));
+				}
+
+				var datos = ObtenerDatosDesdeLoginConfirmToken(modelo.loginConfirmToken);
+
+				if (datos == null)
+				{
+					return Ok(new LoginResponse(false, "", "La confirmación expiró. Intenta iniciar sesión nuevamente.", false, null, null));
+				}
+
+				var usuario = new Usuarios
+				{
+					idUsuario = datos.Value.IdUsuario,
+					idCliente = datos.Value.IdCliente,
+					correoUsuario = datos.Value.Correo
+				};
+
+				var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+				var userAgent = Request.Headers["User-Agent"].ToString();
+
+				var sesion = await _sesionesUsuarioServicios.PrepararLoginAsync(
+					usuario,
+					true,
+					ip,
+					userAgent
+				);
+
+				if (!sesion.PuedeEntrar)
+				{
+					return Ok(new LoginResponse(false, "", sesion.Mensaje, false, null, null));
+				}
+
+				var jwt = GenerateJwtToken(usuario, sesion.SessionId);
+
+				return Ok(new LoginResponse(true, jwt, "", false, null, null));
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("FORZAR LOGIN EXCEPTION: " + ex);
+				return Ok(new LoginResponse(false, "", "No fue posible continuar la sesión.", false, null, null));
+			}
+		}
+
+		public record ForzarLoginRequest(string loginConfirmToken);
 
 		// ✅ POST api/auth/authgoogle (Google)
 		[HttpPost("authgoogle")]
@@ -275,7 +371,46 @@ namespace RydentWebApiNube.Controllers
 					));
 				}
 
-				var jwt = GenerateJwtToken(usuario);
+				var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+				var userAgent = Request.Headers["User-Agent"].ToString();
+
+				var sesion = await _sesionesUsuarioServicios.PrepararLoginAsync(
+					usuario,
+					modelo.forzarCerrarAnterior,
+					ip,
+					userAgent
+				);
+
+				if (sesion.RequiereConfirmacion)
+				{
+					var confirmToken = GenerateLoginConfirmToken(usuario);
+
+					return Ok(new LoginResponse(
+						false,
+						"",
+						sesion.Mensaje,
+						false,
+						validacion.ActivoHasta,
+						validacion.DiasParaVencer,
+						true,
+						confirmToken
+					));
+				}
+
+				if (!sesion.PuedeEntrar)
+				{
+					return Ok(new LoginResponse(
+						false,
+						"",
+						sesion.Mensaje,
+						false,
+						validacion.ActivoHasta,
+						validacion.DiasParaVencer,
+						false
+					));
+				}
+
+				var jwt = GenerateJwtToken(usuario, sesion.SessionId);
 
 				return Ok(new LoginResponse(
 					true,
@@ -401,9 +536,9 @@ namespace RydentWebApiNube.Controllers
 			{
 				var mensaje = diasParaVencer switch
 				{
-					0 => $"Hola, te recordamos cordialmente que tu servicio está activo hasta hoy ({activoHasta:dd/MM/yyyy}). Gracias por tu confianza en Rydent.",
-					1 => $"Hola, te recordamos cordialmente que tu servicio está activo hasta mañana ({activoHasta:dd/MM/yyyy}). Gracias por tu confianza en Rydent.",
-					_ => $"Hola, te recordamos cordialmente que tu servicio está activo hasta el {activoHasta:dd/MM/yyyy}, es decir, por {diasParaVencer} día(s) más. Gracias por tu confianza en Rydent."
+					0 => $"Hola, tu servicio está activo hasta hoy ({activoHasta:dd/MM/yyyy}). Gracias por tu confianza en Rydent.",
+					1 => $"Hola, tu servicio está activo hasta mañana ({activoHasta:dd/MM/yyyy}). Gracias por tu confianza en Rydent.",
+					_ => $"Hola, tu servicio está activo hasta el {activoHasta:dd/MM/yyyy}, es decir, por {diasParaVencer} día(s) más. Gracias por tu confianza en Rydent."
 				};
 
 				return new ValidacionAccesoResult(
@@ -424,7 +559,7 @@ namespace RydentWebApiNube.Controllers
 			);
 		}
 
-		private string GenerateJwtToken(Usuarios user)
+		private string GenerateJwtToken(Usuarios user, string sessionId)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var key = Encoding.ASCII.GetBytes(_configuration["JWT_SECRET"] ?? "");
@@ -433,7 +568,8 @@ namespace RydentWebApiNube.Controllers
 			{
 				new Claim("id", user.idUsuario.ToString()),
 				new Claim("idCliente", user.idCliente?.ToString() ?? ""),
-				new Claim("correo", user.correoUsuario?.ToString() ?? "")
+				new Claim("correo", user.correoUsuario?.ToString() ?? ""),
+				new Claim("sessionId", sessionId)
 			};
 
 			var tokenDescriptor = new SecurityTokenDescriptor
@@ -449,6 +585,80 @@ namespace RydentWebApiNube.Controllers
 
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 			return tokenHandler.WriteToken(token);
+		}
+
+		private string GenerateLoginConfirmToken(Usuarios user)
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var key = Encoding.ASCII.GetBytes(_configuration["JWT_SECRET"] ?? "");
+
+			var claims = new List<Claim>
+			{
+				new Claim("purpose", "force_login"),
+				new Claim("id", user.idUsuario.ToString()),
+				new Claim("idCliente", user.idCliente?.ToString() ?? ""),
+				new Claim("correo", user.correoUsuario?.ToString() ?? "")
+			};
+
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Subject = new ClaimsIdentity(claims),
+				Expires = DateTime.UtcNow.AddMinutes(3),
+				Issuer = _configuration["Jwt:Issuer"] ?? "",
+				Audience = _configuration["JWT_SECRET"] ?? "",
+				SigningCredentials = new SigningCredentials(
+					new SymmetricSecurityKey(key),
+					SecurityAlgorithms.HmacSha256Signature)
+			};
+
+			var token = tokenHandler.CreateToken(tokenDescriptor);
+			return tokenHandler.WriteToken(token);
+		}
+
+		private (int IdUsuario, int? IdCliente, string Correo)? ObtenerDatosDesdeLoginConfirmToken(string token)
+		{
+			try
+			{
+				var jwtSecret = _configuration["JWT_SECRET"] ?? "";
+				var issuer = _configuration["Jwt:Issuer"] ?? "";
+
+				var tokenHandler = new JwtSecurityTokenHandler();
+				var key = Encoding.ASCII.GetBytes(jwtSecret);
+
+				var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+				{
+					ValidateIssuerSigningKey = true,
+					IssuerSigningKey = new SymmetricSecurityKey(key),
+
+					ValidateIssuer = !string.IsNullOrWhiteSpace(issuer),
+					ValidIssuer = issuer,
+
+					ValidateAudience = true,
+					ValidAudience = jwtSecret,
+
+					ValidateLifetime = true,
+					ClockSkew = TimeSpan.FromSeconds(15)
+				}, out _);
+
+				var purpose = principal.Claims.FirstOrDefault(x => x.Type == "purpose")?.Value;
+				if (purpose != "force_login") return null;
+
+				var idStr = principal.Claims.FirstOrDefault(x => x.Type == "id")?.Value;
+				var idClienteStr = principal.Claims.FirstOrDefault(x => x.Type == "idCliente")?.Value;
+				var correo = principal.Claims.FirstOrDefault(x => x.Type == "correo")?.Value ?? "";
+
+				if (!int.TryParse(idStr, out var idUsuario)) return null;
+
+				int? idCliente = null;
+				if (int.TryParse(idClienteStr, out var idClienteParsed))
+					idCliente = idClienteParsed;
+
+				return (idUsuario, idCliente, correo);
+			}
+			catch
+			{
+				return null;
+			}
 		}
 	}
 }

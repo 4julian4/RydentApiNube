@@ -18,6 +18,8 @@ builder.Services.AddScoped<ISedesServicios, SedesServicios>();
 builder.Services.AddScoped<IUsuariosServicios, UsuariosServicios>();
 builder.Services.AddScoped<IHistorialDePagosServicios, HistorialDePagosServicios>();
 builder.Services.AddScoped<ICatalogosServicios, CatalogosServicios>();
+builder.Services.AddScoped<ISesionesUsuarioServicios, SesionesUsuarioServicios>();
+builder.Services.AddHostedService<SesionesUsuarioCierreProgramadoService>();
 builder.Services.AddSingleton<WorkerPresenceRegistry>();
 builder.Services.AddHostedService<WorkerPresenceCleanupService>();
 builder.Services.AddHostedService<SedesConectadasWeeklyCleanupService>();

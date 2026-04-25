@@ -23,8 +23,9 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
     public class RydentHub : Hub
     {
         private readonly ISedesServicios _sedesServicios;
-        //private readonly IConfiguration configuration;
-        private readonly ISedesConectadasServicios _sedesconectadasServicios;
+		private readonly ISesionesUsuarioServicios _sesionesUsuarioServicios;
+		//private readonly IConfiguration configuration;
+		private readonly ISedesConectadasServicios _sedesconectadasServicios;
         private static readonly HttpClient httpClient = new HttpClient();
         //private readonly HttpClient httpClient;
         private readonly IUsuariosServicios iUsuariosServicios;
@@ -50,14 +51,16 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 		public RydentHub(
             ISedesServicios sedesServicios,
             ISedesConectadasServicios sedesconectadasServicios,
-            IConfiguration configuration,
+			ISesionesUsuarioServicios sesionesUsuarioServicios,
+			IConfiguration configuration,
             IUsuariosServicios iUsuariosServicios,
 			WorkerPresenceRegistry presence
 			)
         {
             _sedesServicios = sedesServicios;
             _sedesconectadasServicios = sedesconectadasServicios;
-            this.iUsuariosServicios = iUsuariosServicios;
+			_sesionesUsuarioServicios = sesionesUsuarioServicios;
+			this.iUsuariosServicios = iUsuariosServicios;
 			_presence = presence;
 			this.GoogleTokenEndPoint = configuration["OAuthGoogle:TokenEndPoint"] ?? "";
             this.GoogleRedirectURI = configuration["OAuthGoogle:RedirectURI"] ?? "";
@@ -77,7 +80,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 
 
         //autenticar google
-        public async Task PostLoginCallbackGoogle(string clienteId, string code, string state)
+        public async Task PostLoginCallbackGoogle(string clienteId, string code, string state, bool forzarCerrarAnterior = false)
         {
             // Diccionario con parámetros de autenticación
             string grant_type = "authorization_code";
@@ -114,11 +117,42 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 
                     if (!string.IsNullOrEmpty(googleUser?.email))
                     {
-                        var usuario = await iUsuariosServicios.ConsultarPorCorreo(googleUser.email).ConfigureAwait(false);
-                        var jwtToken = generateJwtToken(usuario);
-                        result["respuesta"] = jwtToken;
-                        result["autenticado"] = true;
-                    }
+						var usuario = await iUsuariosServicios.ConsultarPorCorreo(googleUser.email).ConfigureAwait(false);
+
+						if (usuario == null || usuario.idUsuario <= 0)
+						{
+							result["respuesta"] = "";
+							result["autenticado"] = false;
+							result["mensaje"] = "Usuario no autorizado.";
+						}
+						else
+						{
+							var ip = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
+							var userAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString();
+
+							var sesion = await _sesionesUsuarioServicios.PrepararLoginAsync(
+								usuario,
+								forzarCerrarAnterior,
+								ip,
+								userAgent
+							);
+
+							if (sesion.RequiereConfirmacion)
+							{
+								result["respuesta"] = "";
+								result["autenticado"] = false;
+								result["requiereConfirmacion"] = true;
+								result["mensaje"] = sesion.Mensaje;
+							}
+							else if (sesion.PuedeEntrar)
+							{
+								var jwtToken = generateJwtToken(usuario, sesion.SessionId);
+								result["respuesta"] = jwtToken;
+								result["autenticado"] = true;
+								result["requiereConfirmacion"] = false;
+							}
+						}
+					}
                 }
             }
 
@@ -127,71 +161,142 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             await Clients.Client(clienteId).SendAsync("RespuestaPostLoginCallbackGoogle", clienteId, jsonResult);
         }
 
-        public async Task PostLoginCallback(string clienteId, string code, string state)
-        {
-            // Diccionario con parámetros de autenticación
-            string grant_type = "authorization_code";
+		public async Task PostLoginCallback(
+			string clienteId,
+			string code,
+			string state,
+			bool forzarCerrarAnterior = false)
+		{
+			string grant_type = "authorization_code";
 
-            // Datos del cuerpo de la solicitud para obtener el token
-            var BodyData = new Dictionary<string, string>
-            {
-                { "grant_type", grant_type },
-                { "code", code },
-                { "Redirect_uri", this.RedirectURI },
-                { "client_id", this.ClientId },
-                { "client_secret", this.Secret },
-                { "scope", this.Scope }
-            };
+			var BodyData = new Dictionary<string, string>
+	{
+		{ "grant_type", grant_type },
+		{ "code", code },
+		{ "Redirect_uri", this.RedirectURI },
+		{ "client_id", this.ClientId },
+		{ "client_secret", this.Secret },
+		{ "scope", this.Scope }
+	};
 
-            // Enviar solicitud para obtener el token
-            var body = new FormUrlEncodedContent(BodyData);
-            var response = await httpClient.PostAsync(this.TokenEndPoint, body).ConfigureAwait(false);
-            var status = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+			var result = new ExpandoObject() as IDictionary<string, object>;
+			result["respuesta"] = "";
+			result["autenticado"] = false;
+			result["requiereConfirmacion"] = false;
 
-            // Deserializar respuesta en JSON
-            var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
-            var prettyJson = JsonSerializer.Serialize(jsonContent, new JsonSerializerOptions { WriteIndented = true });
+			try
+			{
+				var body = new FormUrlEncodedContent(BodyData);
+				var response = await httpClient.PostAsync(this.TokenEndPoint, body).ConfigureAwait(false);
 
-            // Extraer el token de acceso
-            var accessToken = jsonContent.GetProperty("access_token").GetString();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+				if (!response.IsSuccessStatusCode)
+				{
+					result["mensaje"] = "No fue posible obtener token de Microsoft.";
+					await Clients.Client(clienteId).SendAsync(
+						"RespuestaPostLoginCallback",
+						clienteId,
+						JsonSerializer.Serialize(result)
+					);
+					return;
+				}
 
-            // Realizar la solicitud autenticada para obtener información del usuario
-            var response1 = await httpClient.GetAsync(API_EndPoint).ConfigureAwait(false);
+				var jsonContent = await response.Content.ReadFromJsonAsync<JsonElement>().ConfigureAwait(false);
 
-            // Inicializar el objeto de resultado para el cliente
-            var result = new ExpandoObject() as IDictionary<string, Object>;
-            result["respuesta"] = "";
-            result["autenticado"] = false;
+				var accessToken = jsonContent.GetProperty("access_token").GetString();
 
-            // Verificar si la solicitud fue exitosa
-            if (response1.IsSuccessStatusCode)
-            {
-                var usrMSNAzure = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var jsUsuarioMSN = JsonSerializer.Deserialize<UsuarioMSN>(usrMSNAzure);
+				httpClient.DefaultRequestHeaders.Authorization =
+					new AuthenticationHeaderValue("Bearer", accessToken);
 
-                status = $"{(int)response1.StatusCode} {response1.ReasonPhrase}";
+				var response1 = await httpClient.GetAsync(API_EndPoint).ConfigureAwait(false);
 
-                // Verificar si el usuario fue encontrado
-                if (!string.IsNullOrEmpty(jsUsuarioMSN?.mail))
-                {
-                    var usuario = await iUsuariosServicios.ConsultarPorCorreo(jsUsuarioMSN.mail).ConfigureAwait(false);
-                    var respuesta = generateJwtToken(usuario);
-                    result["respuesta"] = respuesta;
-                    result["autenticado"] = true;
-                }
-            }
+				if (!response1.IsSuccessStatusCode)
+				{
+					result["mensaje"] = "No fue posible consultar el usuario de Microsoft.";
+					await Clients.Client(clienteId).SendAsync(
+						"RespuestaPostLoginCallback",
+						clienteId,
+						JsonSerializer.Serialize(result)
+					);
+					return;
+				}
 
-            // Serializar el resultado a JSON para enviarlo al cliente
-            string jsonResult = JsonSerializer.Serialize(result);
+				var usrMSNAzure = await response1.Content.ReadAsStringAsync().ConfigureAwait(false);
+				var jsUsuarioMSN = JsonSerializer.Deserialize<UsuarioMSN>(usrMSNAzure);
 
-            // Emitir respuesta de autenticación a cliente específico
-            await Clients.Client(clienteId).SendAsync("RespuestaPostLoginCallback", clienteId, jsonResult);
-        }
+				var correo = jsUsuarioMSN?.mail;
+
+				if (string.IsNullOrWhiteSpace(correo))
+				{
+					result["mensaje"] = "Microsoft no retornó correo del usuario.";
+					await Clients.Client(clienteId).SendAsync(
+						"RespuestaPostLoginCallback",
+						clienteId,
+						JsonSerializer.Serialize(result)
+					);
+					return;
+				}
+
+				var usuario = await iUsuariosServicios
+					.ConsultarPorCorreo(correo)
+					.ConfigureAwait(false);
+
+				if (usuario == null || usuario.idUsuario <= 0)
+				{
+					result["mensaje"] = "Usuario no autorizado.";
+					await Clients.Client(clienteId).SendAsync(
+						"RespuestaPostLoginCallback",
+						clienteId,
+						JsonSerializer.Serialize(result)
+					);
+					return;
+				}
+
+				var ip = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
+				var userAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString();
+
+				var sesion = await _sesionesUsuarioServicios.PrepararLoginAsync(
+					usuario,
+					forzarCerrarAnterior,
+					ip,
+					userAgent
+				);
+
+				if (sesion.RequiereConfirmacion)
+				{
+					result["respuesta"] = "";
+					result["autenticado"] = false;
+					result["requiereConfirmacion"] = true;
+					result["mensaje"] = sesion.Mensaje;
+				}
+				else if (sesion.PuedeEntrar)
+				{
+					var jwtToken = generateJwtToken(usuario, sesion.SessionId);
+
+					result["respuesta"] = jwtToken;
+					result["autenticado"] = true;
+					result["requiereConfirmacion"] = false;
+				}
+			}
+			catch (Exception ex)
+			{
+				result["respuesta"] = "";
+				result["autenticado"] = false;
+				result["requiereConfirmacion"] = false;
+				result["mensaje"] = "Error iniciando sesión con Microsoft: " + ex.Message;
+			}
+
+			string jsonResult = JsonSerializer.Serialize(result);
+
+			await Clients.Client(clienteId).SendAsync(
+				"RespuestaPostLoginCallback",
+				clienteId,
+				jsonResult
+			);
+		}
 
 
 
-        private string generateJwtToken(Usuarios user)
+		/*private string generateJwtToken(Usuarios user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(this.JWT_SECRET);
@@ -211,9 +316,42 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
-        }
+        }*/
 
-        public override async Task OnDisconnectedAsync(Exception exception)
+		//cambio 24-04-2026
+
+		private string generateJwtToken(Usuarios user, string sessionId)
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var key = Encoding.ASCII.GetBytes(this.JWT_SECRET);
+
+			var lstClaims = new List<Claim>
+			{
+				new Claim("id", user.idUsuario.ToString()),
+				new Claim("idCliente", user.idCliente.ToString()),
+				new Claim("correo", user.correoUsuario.ToString()),
+				new Claim("sessionId", sessionId)
+			};
+
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Subject = new ClaimsIdentity(lstClaims),
+				Expires = DateTime.UtcNow.AddDays(7),
+				Issuer = this.JWT ?? "",
+				Audience = this.JWT_SECRET ?? "",
+				SigningCredentials = new SigningCredentials(
+					new SymmetricSecurityKey(key),
+					SecurityAlgorithms.HmacSha256Signature
+				)
+			};
+
+			var token = tokenHandler.CreateToken(tokenDescriptor);
+			return tokenHandler.WriteToken(token);
+		}
+
+
+
+		public override async Task OnDisconnectedAsync(Exception exception)
         {
 			_presence.RemoveByConnection(Context.ConnectionId);
 
@@ -602,7 +740,46 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 			}
 		}
 
+		public async Task ObtenerLotePacientesAgenda(long sedeId, int maxIdAnamnesis)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
 
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("RecibirLotePacientesAgenda", returnId, maxIdAnamnesis);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+			}
+		}
+
+		public async Task RespuestaLotePacientesAgenda(string clienteId, string respuestaPacientes)
+		{
+			var returnId = clienteId;
+
+			try
+			{
+				await Clients.Client(returnId)
+					.SendAsync("RespuestaLotePacientesAgenda", returnId, respuestaPacientes);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar RespuestaLotePacientesAgenda: {ex.Message}");
+			}
+		}
 
 
 		public async Task ObtenerDoctor(string clienteId, string idDoctor)
@@ -1897,6 +2074,48 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 		{
 			await Clients.Client(clienteId)
 				.SendAsync("RespuestaConsultarEncuentrosPacienteInteroperabilidad", clienteId, payload);
+		}
+
+		public async Task GenerarRdaDesdeRipsExistente(long sedeId, string payloadJson)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("GenerarRdaDesdeRipsExistente", returnId, payloadJson);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+
+				Console.Error.WriteLine($"Error al GenerarRdaDesdeRipsExistente: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaGenerarRdaDesdeRipsExistente(string clienteId, bool respuesta, string? mensaje)
+		{
+			var returnId = clienteId;
+
+			try
+			{
+				await Clients.Client(returnId)
+					.SendAsync("RespuestaGenerarRdaDesdeRipsExistente", returnId, respuesta, mensaje);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar RespuestaGenerarRdaDesdeRipsExistente: {ex.Message}");
+			}
 		}
 
 		//------------------------------------------------------------------------------------------------------------//

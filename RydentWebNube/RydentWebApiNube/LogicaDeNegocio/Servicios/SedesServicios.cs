@@ -96,7 +96,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
     }
 
     public interface ISedesServicios
-    {
+	{
         Task<long> Agregar(Sedes sedes);
         Task<bool> Editar(long idSede, Sedes sedes);
         Task<Sedes> ConsultarPorId(long idSede);

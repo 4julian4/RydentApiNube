@@ -1,13 +1,19 @@
 using Microsoft.AspNetCore.ResponseCompression;
 using RydentWebApiNube.LogicaDeNegocio.DbContexts;
 using RydentWebApiNube.LogicaDeNegocio.Hubs;
+using RydentWebApiNube.LogicaDeNegocio.Modelos;
 using RydentWebApiNube.LogicaDeNegocio.Services;
 using RydentWebApiNube.LogicaDeNegocio.Servicios;
+using RydentWebApiNube.v2.Acciones;
+using RydentWebApiNube.v2.Servicios;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Cargar configuración de variables de entorno
 builder.Configuration.AddEnvironmentVariables();
+builder.Services.Configure<WompiOptions>(
+    builder.Configuration.GetSection("Wompi")
+);
 
 // Registrar servicios
 builder.Services.AddDbContext<AppDbContext>();
@@ -23,6 +29,13 @@ builder.Services.AddHostedService<SesionesUsuarioCierreProgramadoService>();
 builder.Services.AddSingleton<WorkerPresenceRegistry>();
 builder.Services.AddHostedService<WorkerPresenceCleanupService>();
 builder.Services.AddHostedService<SedesConectadasWeeklyCleanupService>();
+
+// V2
+builder.Services.AddScoped<IGestorAccionesWorkerService, GestorAccionesWorkerService>();
+builder.Services.AddScoped<IAccionWorker, AccionObtenerCodigosEps>();
+builder.Services.AddScoped<IAccionWorker, AccionObtenerDoctor>();
+builder.Services.AddScoped<IAccionWorker, AccionObtenerPin>();
+// builder.Services.AddScoped<IAccionWorker, AccionBuscarPaciente>();
 
 
 // Agregar controladores y documentación Swagger
@@ -48,7 +61,7 @@ builder.Services.AddCors(options =>
 						 "http://rydentweb-001-site3.jtempurl.com", "https://rydentweb-001-site3.jtempurl.com",
 						 "http://rydentweb-001-site2.jtempurl.com", "https://rydentweb-001-site2.jtempurl.com",
 						 "http://rydentweb-001-site1.jtempurl.com", "https://rydentweb-001-site1.jtempurl.com",
-                         "http://localhost:4200", "https://localhost:4200", "https://rydentclient.azurewebsites.net"
+                         "http://localhost:4200", "http://miproyecto.test:4200", "https://miproyecto.test:4200", "https://localhost:4200", "https://rydentclient.azurewebsites.net"
                         ) // Especificar dominios permitidos
             .AllowAnyMethod()   // Permitir cualquier método (GET, POST, etc.)
             .AllowAnyHeader()   // Permitir cualquier encabezado

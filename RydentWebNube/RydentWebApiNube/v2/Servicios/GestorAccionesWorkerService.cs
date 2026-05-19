@@ -21,7 +21,7 @@ namespace RydentWebApiNube.v2.Servicios
         public GestorAccionesWorkerService(IEnumerable<IAccionWorker> accionesDisponibles)
         {
             _estrategias = accionesDisponibles.ToDictionary(
-                a => a.NombreAccion.ToUpper(), 
+                a => a.NombreAccion.ToUpper(),
                 a => a
             );
         }
@@ -41,8 +41,16 @@ namespace RydentWebApiNube.v2.Servicios
             if (!_estrategias.ContainsKey(clave))
                 throw new Exception($"La acción '{accionOriginal}' no tiene un traductor configurado.");
 
-            var datosWorkerCrudos = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonCrudoWorker);
-            
+            var datosWorkerCrudos = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                jsonCrudoWorker,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            if (datosWorkerCrudos == null)
+                throw new Exception("El worker devolvió una respuesta vacía o inválida.");
+
             return _estrategias[clave].TraducirParaAngular(datosWorkerCrudos);
         }
     }

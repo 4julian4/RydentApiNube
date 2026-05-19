@@ -35,6 +35,8 @@ builder.Services.AddScoped<IGestorAccionesWorkerService, GestorAccionesWorkerSer
 builder.Services.AddScoped<IAccionWorker, AccionObtenerCodigosEps>();
 builder.Services.AddScoped<IAccionWorker, AccionObtenerDoctor>();
 builder.Services.AddScoped<IAccionWorker, AccionObtenerPin>();
+builder.Services.AddScoped<IAccionWorker, ObtenerOdontogramaInicialAccionWorker>();
+builder.Services.AddScoped<IAccionWorker, ObtenerOdontogramaActualAccionWorker>();
 // builder.Services.AddScoped<IAccionWorker, AccionBuscarPaciente>();
 
 

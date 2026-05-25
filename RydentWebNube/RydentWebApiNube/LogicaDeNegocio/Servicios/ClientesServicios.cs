@@ -25,6 +25,8 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
 					// ✅ si no viene, lo generamos acá
 					if (clientes.clienteGuid == Guid.Empty)
 						clientes.clienteGuid = Guid.NewGuid();
+					clientes.fechaCreacion = DateTime.Now;
+					clientes.fechaActualizacion = null;
 
 					_dbcontext.TClientes.Add(clientes);
 					await _dbcontext.SaveChangesAsync();
@@ -96,6 +98,8 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
 				// ✅ Editar SOLO lo permitido (NO tocar clienteGuid, idCliente, fechaCreacion)
 				obj.nombreCliente = clientes.nombreCliente;
 				obj.activoHasta = clientes.activoHasta;
+				obj.rydentWebActivoHasta = clientes.rydentWebActivoHasta;
+				obj.facturacionActivoHasta = clientes.facturacionActivoHasta;
 				obj.observacion = clientes.observacion;
 
 				obj.telefono1 = clientes.telefono1;
@@ -116,7 +120,8 @@ namespace RydentWebApiNube.LogicaDeNegocio.Servicios
 				obj.usaFacturaTech = clientes.usaFacturaTech;
 
 				// ✅ si Dataico está apagado, el tenant debe quedar null
-				obj.billingTenantId = (clientes.usaDataico) ? clientes.billingTenantId : null;
+				//obj.billingTenantId = (clientes.usaDataico) ? clientes.billingTenantId : null;
+				obj.billingTenantId = clientes.billingTenantId;
 
 				obj.estado = clientes.estado;
 

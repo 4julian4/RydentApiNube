@@ -2,6 +2,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Modelos
 {
 	public class WompiOptions
     {
+        public string BaseUrl { get; set; } = string.Empty;
         public string PublicKey { get; set; } = string.Empty;
         public string PrivateKey { get; set; } = string.Empty;
         public string IntegritySecret { get; set; } = string.Empty;

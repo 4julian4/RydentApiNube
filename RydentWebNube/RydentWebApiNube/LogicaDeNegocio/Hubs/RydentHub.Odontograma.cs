@@ -15,11 +15,7 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
         {
             try
             {
-                await EnviarAccionOdontogramaPorSedeAsync(
-                    sedeId,
-                    "ODONTOGRAMA_OBTENER_INICIAL",
-                    idTratamiento,
-                    fecha);
+                await EnviarAccionOdontogramaPorSedeAsync(sedeId, "ODONTOGRAMA_OBTENER_INICIAL", idTratamiento, fecha);
             }
             catch (Exception ex)
             {

@@ -13,6 +13,8 @@ namespace RydentWebApiNube.LogicaDeNegocio.Entidades
 
 		public string? nombreCliente { get; set; }
 		public DateTime? activoHasta { get; set; }
+		public DateTime? rydentWebActivoHasta { get; set; }
+		public DateTime? facturacionActivoHasta { get; set; }
 		public string? observacion { get; set; }
 
 		public string? telefono1 { get; set; }

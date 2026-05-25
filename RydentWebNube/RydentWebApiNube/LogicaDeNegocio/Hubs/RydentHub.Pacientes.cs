@@ -96,7 +96,6 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 
 
 
-
         public async Task GuardarDatosPersonales(long sedeId, string datosPersonales)
         {
             try
@@ -372,7 +371,47 @@ namespace RydentWebApiNube.LogicaDeNegocio.Hubs
 			}
 		}
 
-		
+		public async Task ObtenerTratamientosPaciente(long sedeId, string idAnamnesis)
+		{
+			try
+			{
+				var returnId = Context.ConnectionId;
+				var workerConnId = await ResolveWorkerConnIdBySedeAsync(sedeId);
+
+				if (!string.IsNullOrWhiteSpace(workerConnId))
+				{
+					await Clients.Client(workerConnId)
+						.SendAsync("ObtenerTratamientosPaciente", returnId, idAnamnesis);
+				}
+				else
+				{
+					await Clients.Client(returnId)
+						.SendAsync("ErrorConexion", returnId, "No se encontró conexión activa");
+				}
+			}
+			catch (Exception ex)
+			{
+				await Clients.Client(Context.ConnectionId)
+					.SendAsync("ErrorConexion", Context.ConnectionId, ex.Message);
+
+				Console.Error.WriteLine($"Error al ObtenerTratamientosPaciente: {ex.Message}");
+			}
+		}
+
+		public async Task RespuestaObtenerTratamientosPaciente(string clienteId, string tratamientos)
+		{
+			try
+			{
+				await Clients.Client(clienteId)
+					.SendAsync("RespuestaObtenerTratamientosPaciente", clienteId, tratamientos);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Error al enviar RespuestaObtenerTratamientosPaciente: {ex.Message}");
+			}
+		}
+
+
 		public async Task ObtenerLotePacientesAgenda(long sedeId, int maxIdAnamnesis)
 		{
 			try

@@ -20,7 +20,33 @@ namespace RydentWebApiNube.LogicaDeNegocio.DbContexts
             }
             
         }
-        public DbSet<Clientes> TClientes { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+			modelBuilder.Entity<Producto>(entity =>
+			{
+				entity.HasIndex(e => e.Codigo)
+					  .IsUnique();
+
+				entity.HasMany(e => e.Beneficios)
+					  .WithOne(e => e.Producto)
+					  .HasForeignKey(e => e.IdProducto);
+			});
+
+			modelBuilder.Entity<ProductoBeneficio>(entity =>
+			{
+				entity.HasOne(e => e.Producto)
+					  .WithMany(e => e.Beneficios)
+					  .HasForeignKey(e => e.IdProducto);
+			});
+			modelBuilder.Entity<PagoTransaccion>(entity =>
+			{
+				entity.HasIndex(e => e.Reference)
+					  .IsUnique();
+			});
+		}
+
+		public DbSet<Clientes> TClientes { get; set; }
         public DbSet<HistorialDePagos> THistorialDePagos { get; set; }
         public DbSet<Historiales> THistoriales { get; set; }
         public DbSet<Sedes> TSedes { get; set; }
@@ -32,6 +58,10 @@ namespace RydentWebApiNube.LogicaDeNegocio.DbContexts
 		public DbSet<CodigosEps> TCODIGOS_EPS { get; set; }
 		public DbSet<CodigosConsultas> TCODIGOS_CONSLUTAS { get; set; }
 		public DbSet<CodigosProcedimientos> TCODIGOS_PROCEDIMIENTOS { get; set; }
+		public DbSet<Producto> Producto { get; set; }
+		public DbSet<ProductoBeneficio> ProductoBeneficio { get; set; }
+		public DbSet<PagoTransaccion> PagoTransaccion { get; set; }
+
 		//public DbSet<Citas> TCitas { get; set; }
 		//public DbSet<DetalleCitas> TDetalleCitas { get; set; }
 	}

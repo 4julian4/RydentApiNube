@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Extensions.Options;
+using RydentWebApiNube.LogicaDeNegocio.Clients;
 using RydentWebApiNube.LogicaDeNegocio.DbContexts;
 using RydentWebApiNube.LogicaDeNegocio.Hubs;
 using RydentWebApiNube.LogicaDeNegocio.Modelos;
 using RydentWebApiNube.LogicaDeNegocio.Services;
 using RydentWebApiNube.LogicaDeNegocio.Servicios;
+using RydentWebApiNube.LogicaDeNegocio.Workers;
 using RydentWebApiNube.v2.Acciones;
 using RydentWebApiNube.v2.Servicios;
 
@@ -14,6 +17,16 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.Configure<WompiOptions>(
     builder.Configuration.GetSection("Wompi")
 );
+
+builder.Services.AddHttpClient<IWompiService, WompiService>((sp, client) =>
+{
+	var options = sp.GetRequiredService<IOptions<WompiOptions>>().Value;
+	client.BaseAddress = new Uri(options.BaseUrl);
+});
+builder.Services.AddHttpClient<IFacturacionApiClient, FacturacionApiClient>(client =>
+{
+	client.BaseAddress = new Uri(builder.Configuration["FacturacionApi:BaseUrl"]);
+});
 
 // Registrar servicios
 builder.Services.AddDbContext<AppDbContext>();
@@ -35,6 +48,14 @@ builder.Services.AddScoped<IGestorAccionesWorkerService, GestorAccionesWorkerSer
 builder.Services.AddScoped<IAccionWorker, AccionObtenerCodigosEps>();
 builder.Services.AddScoped<IAccionWorker, AccionObtenerDoctor>();
 builder.Services.AddScoped<IAccionWorker, AccionObtenerPin>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<ITokenUserService, TokenUserService>();
+builder.Services.AddScoped<IPagoTransaccionService, PagoTransaccionService>();
+builder.Services.AddScoped<IWompiSincronizacionService, WompiSincronizacionService>();
+
+
+
+builder.Services.AddHostedService<WompiTransaccionesWorker>();
 builder.Services.AddScoped<IAccionWorker, ObtenerOdontogramaInicialAccionWorker>();
 builder.Services.AddScoped<IAccionWorker, ObtenerOdontogramaActualAccionWorker>();
 // builder.Services.AddScoped<IAccionWorker, AccionBuscarPaciente>();

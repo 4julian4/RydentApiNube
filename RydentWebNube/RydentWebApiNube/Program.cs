@@ -9,8 +9,18 @@ using RydentWebApiNube.LogicaDeNegocio.Servicios;
 using RydentWebApiNube.LogicaDeNegocio.Workers;
 using RydentWebApiNube.v2.Acciones;
 using RydentWebApiNube.v2.Servicios;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Cargar .env solo si existe.
+// Útil para desarrollo local. En servidor MyASP se usan variables del Application Pool.
+var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+}
 
 // Cargar configuración de variables de entorno
 builder.Configuration.AddEnvironmentVariables();
@@ -20,12 +30,12 @@ builder.Services.Configure<WompiOptions>(
 
 builder.Services.AddHttpClient<IWompiService, WompiService>((sp, client) =>
 {
-	var options = sp.GetRequiredService<IOptions<WompiOptions>>().Value;
-	client.BaseAddress = new Uri(options.BaseUrl);
+    var options = sp.GetRequiredService<IOptions<WompiOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
 });
 builder.Services.AddHttpClient<IFacturacionApiClient, FacturacionApiClient>(client =>
 {
-	client.BaseAddress = new Uri(builder.Configuration["FacturacionApi:BaseUrl"]);
+    client.BaseAddress = new Uri(builder.Configuration["FacturacionApi:BaseUrl"]);
 });
 
 // Registrar servicios
@@ -79,11 +89,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: "RydentWebCORS", policyBuilder =>
     {
-        policyBuilder     
+        policyBuilder
             .WithOrigins(
-						 "http://rydentweb-001-site3.jtempurl.com", "https://rydentweb-001-site3.jtempurl.com",
-						 "http://rydentweb-001-site2.jtempurl.com", "https://rydentweb-001-site2.jtempurl.com",
-						 "http://rydentweb-001-site1.jtempurl.com", "https://rydentweb-001-site1.jtempurl.com",
+                         "http://rydentweb-001-site3.jtempurl.com", "https://rydentweb-001-site3.jtempurl.com",
+                         "http://rydentweb-001-site2.jtempurl.com", "https://rydentweb-001-site2.jtempurl.com",
+                         "http://rydentweb-001-site1.jtempurl.com", "https://rydentweb-001-site1.jtempurl.com",
                          "http://localhost:4200", "http://miproyecto.test:4200", "https://miproyecto.test:4200", "https://localhost:4200", "https://rydentclient.azurewebsites.net"
                         ) // Especificar dominios permitidos
             .AllowAnyMethod()   // Permitir cualquier método (GET, POST, etc.)
@@ -104,8 +114,13 @@ var app = builder.Build();
 // Configuración de entorno de desarrollo (Swagger)
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+else
+{
+    app.UseExceptionHandler("/error");
 }
 
 // Configuración de la aplicación

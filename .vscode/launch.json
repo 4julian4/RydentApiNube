@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "RydentWebApiNube (.NET)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build RydentWebApiNube",
+      "program": "${workspaceFolder}/RydentWebNube/RydentWebApiNube/bin/Debug/net6.0/RydentWebApiNube.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/RydentWebNube/RydentWebApiNube",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s/swagger"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7028;http://localhost:5000"
+      },
+      "sourceFileMap": {
+        "/Views": "${workspaceFolder}/Views"
+      }
+    }
+  ]
+}
